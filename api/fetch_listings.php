@@ -174,6 +174,42 @@ class PropertyListings {
         $endpoint = $this->supabaseUrl . '/storage/v1/object/public/properties/' . $path;
         return $endpoint;
     }
+
+    // Add this method inside the PropertyListings class in fetch_listings.php
+
+    /**
+     * Fetch properties owned by a specific landlord/tenant
+     *
+     * @param string $landlordId The UUID of the landlord/tenant
+     * @return array Properties data
+     */
+    public function getPropertiesByLandlord($landlordId) {
+        // Ensure landlord_id column name matches your 'properties' table schema
+        $endpoint = $this->supabaseUrl . '/rest/v1/properties?select=*&landlord_id=eq.' . urlencode($landlordId);
+        // Add ordering if desired, e.g., by creation date
+        $endpoint .= '&order=created_at.desc';
+
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers); // Use class headers
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($statusCode !== 200) {
+            error_log("Supabase error fetching properties for landlord {$landlordId}: " . $response);
+            return ['error' => 'Failed to fetch your properties', 'status' => $statusCode];
+        }
+
+        $properties = json_decode($response, true);
+
+        // Optionally, fetch and attach primary images if needed for the dashboard view
+         return $this->attachPrimaryImages($properties); // Reuse existing method
+
+        // Or return raw properties if images aren't needed on this specific dashboard view
+        // return $properties;
+    }
 }
 
 // Handle API requests if this file is accessed directly
