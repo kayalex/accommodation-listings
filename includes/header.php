@@ -1,9 +1,15 @@
 <?php
 // includes/header.php
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../api/auth.php';
 
-// Check if user is logged in
-$isLoggedIn = isset($_SESSION['user_id']);
+// Initialize Auth class
+$auth = new Auth();
+
+// Check if user is logged in and get user data
+$isLoggedIn = $auth->isAuthenticated();
+$userData = $isLoggedIn ? $auth->getCurrentUser() : null;
+$userRole = $isLoggedIn ? $auth->getUserRole() : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,15 +39,31 @@ $isLoggedIn = isset($_SESSION['user_id']);
             </a>
             
             <div class="flex space-x-4">
-                <a href="listings.php" class="text-gray-600 hover:text-blue-600">Properties</a>
+                <a href="listings.php" class="text-gray-600 hover:text-blue-600">Browse Listings</a>
                 
                 <?php if ($isLoggedIn): ?>
+                    <?php if ($userRole === 'landlord'): ?>
+                        <a href="add-property.php" class="text-gray-600 hover:text-blue-600">Add Property</a>
+                    <?php endif; ?>
+                    
                     <a href="dashboard.php" class="text-gray-600 hover:text-blue-600">Dashboard</a>
-                    <a href="create_listing.php" class="text-gray-600 hover:text-blue-600">Create Listing</a>
-                    <a href="../api/auth.php?action=logout" class="text-gray-600 hover:text-blue-600">Logout</a>
+                    
+                    <div class="relative group">
+                        <button class="text-gray-600 hover:text-blue-600">
+                            <?= htmlspecialchars($userData['profile']['name'] ?? $userData['auth']['user']['email']) ?>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg hidden group-hover:block">
+                            <a href="edit-profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                Edit Profile
+                            </a>
+                            <a href="logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                Logout
+                            </a>
+                        </div>
+                    </div>
                 <?php else: ?>
                     <a href="login.php" class="text-gray-600 hover:text-blue-600">Login</a>
-                    <a href="register.php" class="text-gray-600 hover:text-blue-600">Register</a>
+                    <a href="sign-up.php" class="text-gray-600 hover:text-blue-600">Sign Up</a>
                 <?php endif; ?>
             </div>
         </nav>

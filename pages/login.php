@@ -1,5 +1,6 @@
 <?php
-include("../api/auth.php");
+require_once __DIR__ . "/../api/auth.php";
+require_once __DIR__ . "/../includes/header.php";
 
 $auth = new Auth();
 
@@ -19,101 +20,81 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         header("Location: dashboard.php");
         exit();
     } else {
-        $error = "Login Failed: " . $loginResult;
+        $error = $loginResult;
     }
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Accommodation Listings</title>
-    <link rel="stylesheet" href="css/styles.css">
-    <style>
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+<div class="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
+        <div class="px-6 py-8">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">Welcome Back</h2>
+                <p class="mt-2 text-sm text-gray-600">
+                    Don't have an account? 
+                    <a href="sign-up.php" class="text-blue-500 hover:text-blue-700 font-medium">
+                        Sign up
+                    </a>
+                </p>
+            </div>
 
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+            <?php if (isset($error)): ?>
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <?php echo htmlspecialchars($error); ?>
+                </div>
+            <?php endif; ?>
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+            <form method="POST" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">
+                        Email Address
+                    </label>
+                    <input type="email" id="email" name="email" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
 
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">
+                        Password
+                    </label>
+                    <input type="password" id="password" name="password" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
 
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember_me" name="remember_me"
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="remember_me" class="ml-2 block text-sm text-gray-900">
+                            Remember me
+                        </label>
+                    </div>
 
-        .btn-primary {
-            width: 100%;
-            padding: 10px;
-            background-color: #4A66F7;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
+                            Forgot password?
+                        </a>
+                    </div>
+                </div>
 
-        .btn-primary:hover {
-            background-color: #3A56E7;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>Login</h1>
+                <div>
+                    <button type="submit"
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Sign in
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <?php if (isset($error)): ?>
-            <div class="alert">
-                <?php echo htmlspecialchars($error); ?>
-            </div>
-        <?php endif; ?>
-
-        <form method="POST">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" class="form-control" required>
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" class="form-control" required>
-            </div>
-
-            <button type="submit" class="btn-primary">Login</button>
-        </form>
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <a href="index.php" class="text-sm text-gray-600 hover:text-gray-900 flex items-center justify-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Home
+            </a>
+        </div>
     </div>
-</body>
-</html>
+</div>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

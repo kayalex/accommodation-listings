@@ -1,24 +1,30 @@
 <?php
-// Database connection setup (replace with your Supabase alternative)
-$db_host = "localhost";
-$db_user = "username";
-$db_pass = "password";
-$db_name = "student_housing";
 
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+// Include necessary files
+include_once __DIR__ . "/../config/config.php";
+require_once __DIR__ . "/../api/fetch_listings.php";
+require_once __DIR__ . '/../includes/header.php'; // Include standard header
 
-// Fetch latest property listings
-$sql = "SELECT * FROM listings ORDER BY created_at DESC LIMIT 6";
-$result = $conn->query($sql);
+
+// Initialize PropertyListings class
+$listingApi = new PropertyListings();
 $properties = [];
+$error = null;
 
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $properties[] = $row;
+try {
+    // Get latest 6 properties using the PropertyListings class
+    $properties = $listingApi->getAllProperties(null, null, null, null);
+    
+    // Limit to 6 properties if we got more
+    if (!isset($properties['error'])) {
+        $properties = array_slice($properties, 0, 6);
+    } else {
+        $error = $properties['error'];
+        $properties = [];
     }
+} catch (Exception $e) {
+    $error = "Error fetching property listings: " . $e->getMessage();
+    $properties = [];
 }
 ?>
 
@@ -58,7 +64,7 @@ if ($result->num_rows > 0) {
             --background: #ffffff;
             --foreground: #1a202c;
             --muted-foreground: #6b7280;
-            --primary: #3b82f6;
+            --primary:rgb(0, 207, 183);
             --primary-foreground: #ffffff;
             --border: #e5e7eb;
         }
@@ -84,57 +90,11 @@ if ($result->num_rows > 0) {
 </head>
 <body>
     <div class="flex flex-col min-h-screen">
-        <!-- Header -->
-        <header class="sticky top-0 z-50 w-full border-b border-border bg-background backdrop-blur">
-            <div class="container mx-auto flex h-16 items-center">
-                <a href="index.php" class="flex items-center space-x-2">
-                    <span class="font-bold text-xl">StudentHousing</span>
-                </a>
-                <nav class="flex items-center ml-auto space-x-6 text-sm font-medium">
-                    <a href="properties.php" class="transition-colors hover:text-foreground/80 text-foreground/60">
-                        Browse Listings
-                    </a>
-                    <a href="dashboard/new.php" class="transition-colors hover:text-foreground/80 text-foreground/60">
-                        List Property
-                    </a>
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <a href="dashboard.php" class="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Dashboard
-                        </a>
-                        <a href="logout.php" class="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Log Out
-                        </a>
-                    <?php else: ?>
-                        <a href="login.php" class="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Login
-                        </a>
-                        <a href="signup.php" class="transition-colors hover:text-foreground/80 text-foreground/60">
-                            Sign Up
-                        </a>
-                    <?php endif; ?>
-                    <button id="theme-toggle" class="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-light hidden">
-                            <circle cx="12" cy="12" r="5"></circle>
-                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                            <line x1="1" y1="12" x2="3" y2="12"></line>
-                            <line x1="21" y1="12" x2="23" y2="12"></line>
-                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                        </svg>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="theme-dark">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                        </svg>
-                    </button>
-                </nav>
-            </div>
-        </header>
+       
 
         <!-- Main content -->
         <main class="flex-1">
-            <div class="container mx-auto py-6">
+            <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8"> <!-- Added padding classes -->
                 <div class="space-y-12">
                     <!-- Hero Section with Fade-In Animation -->
                     <section class="text-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white animate-fade-in rounded-lg">
@@ -149,14 +109,14 @@ if ($result->num_rows > 0) {
                             <a href="properties.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-transform transform hover:scale-105">
                                 Browse Listings
                             </a>
-                            <a href="dashboard/new.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-primary/10 hover:bg-primary/20 transition-transform transform hover:scale-105">
+                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-primary/10 hover:bg-primary/20 transition-transform transform hover:scale-105">
                                 List Your Property
                             </a>
                         </div>
                     </section>
 
                     <!-- Latest Listings Section -->
-                    <section>
+                    <section class="max-w-7xl mx-auto"> <!-- Added max-width and center alignment -->
                         <div class="flex justify-between items-center mb-6">
                             <h2 class="text-2xl font-bold tracking-tight">Latest Listings</h2>
                             <a href="properties.php" class="text-primary hover:underline">
@@ -164,23 +124,44 @@ if ($result->num_rows > 0) {
                             </a>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <?php foreach ($properties as $property): ?>
-                                <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <img src="<?php echo htmlspecialchars($property['image_url']); ?>" alt="<?php echo htmlspecialchars($property['title']); ?>" class="h-48 w-full object-cover">
-                                    <div class="p-4">
-                                        <h3 class="font-semibold text-lg"><?php echo htmlspecialchars($property['title']); ?></h3>
-                                        <p class="text-sm text-muted-foreground mt-1"><?php echo htmlspecialchars($property['location']); ?></p>
-                                        <div class="flex justify-between items-center mt-4">
-                                            <span class="font-bold">K<?php echo number_format($property['price']); ?>/month</span>
-                                            <a href="property.php?id=<?php echo $property['id']; ?>" class="text-primary hover:underline">View details</a>
+                            <?php if (!empty($properties)): ?>
+                                <?php foreach ($properties as $property): ?>
+                                    <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                        <div class="relative h-48">
+                                            <?php if (!empty($property['image_url'])): ?>
+                                                <img src="<?php echo htmlspecialchars($property['image_url']); ?>" 
+                                                     alt="<?php echo htmlspecialchars($property['title'] ?? 'Property Image'); ?>" 
+                                                     class="h-full w-full object-cover">
+                                            <?php else: ?>
+                                                <div class="h-full w-full bg-gray-200 flex items-center justify-center">
+                                                    <span class="text-gray-400">No image available</span>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="p-4">
+                                            <h3 class="font-semibold text-lg">
+                                                <?php echo htmlspecialchars($property['title'] ?? 'Untitled Property'); ?>
+                                            </h3>
+                                            <p class="text-sm text-muted-foreground mt-1">
+                                                <?php echo htmlspecialchars($property['address'] ?? 'Location not specified'); ?>
+                                            </p>
+                                            <div class="flex justify-between items-center mt-4">
+                                                <span class="font-bold">
+                                                    K<?php echo number_format($property['price'] ?? 0); ?>/month
+                                                </span>
+                                                <a href="listing_detail.php?id=<?php echo $property['id']; ?>" 
+                                                   class="text-primary hover:underline">
+                                                    View details
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            <?php endforeach; ?>
-                            
-                            <?php if (count($properties) === 0): ?>
+                                <?php endforeach; ?>
+                            <?php else: ?>
                                 <div class="col-span-3 text-center py-12">
-                                    <p class="text-muted-foreground">No properties available at the moment.</p>
+                                    <p class="text-muted-foreground">
+                                        <?php echo $error ?? 'No properties available at the moment.'; ?>
+                                    </p>
                                 </div>
                             <?php endif; ?>
                         </div>

@@ -27,49 +27,52 @@ if ($user_role !== 'landlord') {
     exit;
 }
 
-
 // *** Database Connection for Property/Amenity Operations ***
 // Decide if you are using Supabase API calls via PHP (like in Auth/PropertyListings)
 // OR a direct PDO connection for these operations.
-// The code below uses PDO based on your original file. Keep it if that's intended.
-// If you want to use Supabase API for everything, you'll need to refactor this part.
+// The code below uses Supabase API based on the provided suggestion.
 
-$conn = null; // Initialize connection variable
 $error = null; // Initialize error variable
 $amenities = []; // Initialize amenities array
 
 try {
-    // PDO connection using config details - ONLY if you are NOT using Supabase API for these actions
-     $dsn = "pgsql:host={$dbHost};port={$dbPort};dbname={$dbName}";
-     $conn = new PDO($dsn, $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    // Supabase API call to fetch amenities
+    $supabaseUrl = SUPABASE_URL;
+    $supabaseKey = SUPABASE_KEY;
 
+    $endpoint = $supabaseUrl . '/rest/v1/amenities?select=id,name&order=name.asc';
+    $headers = [
+        'Content-Type: application/json',
+        'apikey: ' . $supabaseKey,
+        'Authorization: Bearer ' . $supabaseKey
+    ];
 
-    // Get amenities for checkbox selection (using PDO)
-    $stmt = $conn->prepare("SELECT id, name FROM amenities ORDER BY name"); // Select id and name
-    $stmt->execute();
-    $amenities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $ch = curl_init($endpoint);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
+    $response = curl_exec($ch);
+    $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-} catch (PDOException $e) {
-    $error = "Database connection or query error: " . $e->getMessage();
-    // Handle error appropriately - maybe redirect or show a friendly message
-    // For now, we'll let the form potentially show the error
+    if ($statusCode === 200) {
+        $amenities = json_decode($response, true);
+    } else {
+        $error = "Failed to fetch amenities. Status code: $statusCode";
+    }
+} catch (Exception $e) {
+    $error = "Error fetching amenities: " . $e->getMessage();
 }
 
 // Default map center coordinates (Keep as is)
 $defaultLat = -12.80532;
 $defaultLng = 28.24403;
 
-
 // Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $conn) { // Only proceed if DB connection was successful
-    // $error = null; // Reset error specific to form processing
+if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Only proceed if DB connection was successful
     $uploadProgress = 0;
 
     try {
-        // Start transaction
-        $conn->beginTransaction();
-
         // Validate inputs (Keep existing validation)
         $title = trim($_POST['title']);
         $description = trim($_POST['description']);
@@ -79,170 +82,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $conn) { // Only proceed if DB conn
         $longitude = filter_input(INPUT_POST, 'longitude', FILTER_VALIDATE_FLOAT);
         $selectedAmenities = isset($_POST['amenities']) && is_array($_POST['amenities']) ? $_POST['amenities'] : [];
 
-
         // Basic validation examples (enhance as needed)
-         if (empty($title)) throw new Exception("Title is required");
-         if ($price === false || $price <= 0) throw new Exception("Valid price is required");
-         if ($latitude === false || $longitude === false) throw new Exception("Valid map location is required");
-         if (empty($_FILES['images']['name'][0])) throw new Exception("Please upload at least one image");
+        if (empty($title)) throw new Exception("Title is required");
+        if ($price === false || $price <= 0) throw new Exception("Valid price is required");
+        if ($latitude === false || $longitude === false) throw new Exception("Valid map location is required");
+        if (empty($_FILES['images']['name'][0])) throw new Exception("Please upload at least one image");
 
+        // Insert property (Using Supabase API)
+        $propertyData = [
+            'title' => $title,
+            'description' => $description,
+            'price' => $price,
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'address' => $address ?: null,
+            'landlord_id' => $user_id
+        ];
 
-        // Insert property (Using PDO - Ensure 'landlord_id' column exists and matches the user ID type)
-        $stmt = $conn->prepare("
-            INSERT INTO properties
-            (title, description, price, latitude, longitude, address, landlord_id) -- Assuming landlord_id is the correct column name
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
+        $endpoint = $supabaseUrl . '/rest/v1/properties';
+        $headers = [
+            'Content-Type: application/json',
+            'apikey: ' . $supabaseKey,
+            'Authorization: Bearer ' . $supabaseKey
+        ];
 
-        // Use the user_id obtained from the Auth class
-        $stmt->execute([
-            $title,
-            $description,
-            $price,
-            $latitude,
-            $longitude,
-            $address ?: null, // Use null if address is empty
-            $user_id // Use the authenticated user's ID
-        ]);
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($propertyData));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-        $propertyId = $conn->lastInsertId();
+        $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
+        if ($statusCode !== 201) {
+            throw new Exception("Failed to add property. Status code: $statusCode");
+        }
 
-        // Insert amenities (Keep existing logic, uses PDO)
-         if (!empty($selectedAmenities)) {
-             $amenityValues = [];
-             $placeholders = [];
+        $propertyId = json_decode($response, true)['id'];
 
+        // Insert amenities (Using Supabase API)
+        if (!empty($selectedAmenities)) {
+            foreach ($selectedAmenities as $amenityId) {
+                $validAmenityId = filter_var($amenityId, FILTER_VALIDATE_INT);
+                if ($validAmenityId) {
+                    $amenityData = [
+                        'property_id' => $propertyId,
+                        'amenity_id' => $validAmenityId
+                    ];
 
-             foreach ($selectedAmenities as $amenityId) {
-                 $validAmenityId = filter_var($amenityId, FILTER_VALIDATE_INT);
-                 if ($validAmenityId) { // Ensure it's a valid integer
-                     $amenityValues[] = $propertyId;
-                     $amenityValues[] = $validAmenityId;
-                     $placeholders[] = "(?, ?)";
-                 }
-             }
+                    $endpoint = $supabaseUrl . '/rest/v1/property_amenities';
+                    $ch = curl_init($endpoint);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($amenityData));
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
+                    $response = curl_exec($ch);
+                    $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
 
-             if (!empty($placeholders)) {
-                 $amenityQuery = "INSERT INTO property_amenities (property_id, amenity_id) VALUES " . implode(", ", $placeholders);
-                 $stmt = $conn->prepare($amenityQuery);
-                 $stmt->execute($amenityValues);
-             }
-         }
-
+                    if ($statusCode !== 201) {
+                        throw new Exception("Failed to add amenity. Status code: $statusCode");
+                    }
+                }
+            }
+        }
 
         // Process images (Keep existing logic, saves locally)
-        // Consider using Supabase Storage instead for scalability and easier management
-         $totalImages = count($_FILES['images']['name']);
-         // Use a path relative to the web root, ensure permissions are correct
-         $uploadDir = '../public/uploads/properties/landlord_' . $user_id . '/' . $propertyId . '/'; // Adjusted path
+        $totalImages = count($_FILES['images']['name']);
+        $uploadDir = '../public/uploads/properties/landlord_' . $user_id . '/' . $propertyId . '/';
 
+        if (!file_exists($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true)) {
+                throw new Exception("Failed to create upload directory. Check permissions.");
+            }
+        }
 
-         if (!file_exists($uploadDir)) {
-             if (!mkdir($uploadDir, 0755, true)) {
-                 throw new Exception("Failed to create upload directory. Check permissions.");
-             }
-         }
+        for ($i = 0; $i < $totalImages; $i++) {
+            if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
+                throw new Exception("Error uploading file " . $_FILES['images']['name'][$i] . ": Error code " . $_FILES['images']['error'][$i]);
+            }
 
+            $tmpName = $_FILES['images']['tmp_name'][$i];
+            $name = basename($_FILES['images']['name'][$i]);
+            $size = $_FILES['images']['size'][$i];
 
-         for ($i = 0; $i < $totalImages; $i++) {
-             if ($_FILES['images']['error'][$i] !== UPLOAD_ERR_OK) {
-                  // Handle upload errors per file
-                  throw new Exception("Error uploading file " . $_FILES['images']['name'][$i] . ": Error code " . $_FILES['images']['error'][$i]);
-             }
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $tmpName);
+            finfo_close($finfo);
+            $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($mimeType, $allowedMimeTypes)) {
+                throw new Exception("File '{$name}' is not a valid image type ({$mimeType}). Allowed: JPG, PNG, GIF, WEBP.");
+            }
 
+            if ($size > 5 * 1024 * 1024) {
+                throw new Exception("Image '{$name}' exceeds the 5MB size limit.");
+            }
 
-             $tmpName = $_FILES['images']['tmp_name'][$i];
-             $name = basename($_FILES['images']['name'][$i]); // Use basename for security
-             $size = $_FILES['images']['size'][$i];
+            $sanitizedName = preg_replace('/[^a-zA-Z0-9.\-_]/', '_', $name);
+            $sanitizedName = preg_replace('/_+/', '_', $sanitizedName);
+            $fileExtension = pathinfo($sanitizedName, PATHINFO_EXTENSION);
+            $fileNameWithoutExt = pathinfo($sanitizedName, PATHINFO_FILENAME);
+            $fileName = $fileNameWithoutExt . '_' . time() . '_' . $i . '.' . strtolower($fileExtension);
+            $filePath = $uploadDir . $fileName;
+            $storagePathForDb = 'properties/landlord_' . $user_id . '/' . $propertyId . '/' . $fileName;
 
+            if (!move_uploaded_file($tmpName, $filePath)) {
+                throw new Exception("Failed to move uploaded image '{$name}'. Check directory permissions.");
+            }
 
-             // Validate file is an image (more robust check)
-             $finfo = finfo_open(FILEINFO_MIME_TYPE);
-             $mimeType = finfo_file($finfo, $tmpName);
-             finfo_close($finfo);
-             $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-             if (!in_array($mimeType, $allowedMimeTypes)) {
-                 throw new Exception("File '{$name}' is not a valid image type ({$mimeType}). Allowed: JPG, PNG, GIF, WEBP.");
-             }
+            $imageData = [
+                'property_id' => $propertyId,
+                'storage_path' => $storagePathForDb,
+                'is_primary' => $i === 0 ? 1 : 0,
+                'public_url' => rtrim($appUrl, '/') . '/uploads/' . $storagePathForDb
+            ];
 
+            $endpoint = $supabaseUrl . '/rest/v1/property_images';
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($imageData));
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-             // Check size (5MB max)
-             if ($size > 5 * 1024 * 1024) {
-                 throw new Exception("Image '{$name}' exceeds the 5MB size limit.");
-             }
+            $response = curl_exec($ch);
+            $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-
-             // Sanitize filename
-             $sanitizedName = preg_replace('/[^a-zA-Z0-9.\-_]/', '_', $name);
-             $sanitizedName = preg_replace('/_+/', '_', $sanitizedName);
-             $fileExtension = pathinfo($sanitizedName, PATHINFO_EXTENSION);
-             $fileNameWithoutExt = pathinfo($sanitizedName, PATHINFO_FILENAME);
-             // Create unique filename
-             $fileName = $fileNameWithoutExt . '_' . time() . '_' . $i . '.' . strtolower($fileExtension);
-             $filePath = $uploadDir . $fileName;
-              $storagePathForDb = 'properties/landlord_' . $user_id . '/' . $propertyId . '/' . $fileName; // Path relative to bucket for Supabase Storage (if used) or consistent local path
-
-
-             // Upload file
-             if (!move_uploaded_file($tmpName, $filePath)) {
-                 throw new Exception("Failed to move uploaded image '{$name}'. Check directory permissions.");
-             }
-
-
-             // *** IMPORTANT: If using Supabase Storage, you would upload here via API ***
-             // $publicUrl = $supabaseStorage->upload($filePath, $storagePathForDb); // Example
-
-
-             // For local storage, construct the URL (ensure '/public' is accessible)
-             // Check $appUrl from config.php
-             global $appUrl; // Make sure $appUrl is defined in config.php
-             $publicUrl = rtrim($appUrl, '/') . '/uploads/' . $storagePathForDb; // URL relative to web root
-
-
-             // Insert image record (Using PDO)
-             // Make sure 'storage_path' and 'public_url' columns exist
-             $stmt = $conn->prepare("
-                 INSERT INTO property_images
-                 (property_id, storage_path, is_primary, public_url)
-                 VALUES (?, ?, ?, ?)
-             ");
-
-
-             $stmt->execute([
-                 $propertyId,
-                 $storagePathForDb, // Store the relative path used for Supabase or local structure
-                 $i === 0 ? 1 : 0, // First image is primary
-                 $publicUrl // Store the accessible URL
-             ]);
-
+            if ($statusCode !== 201) {
+                throw new Exception("Failed to add image. Status code: $statusCode");
+            }
 
             $uploadProgress = ($i + 1) / $totalImages * 100;
-         }
-
-
-        // Commit transaction
-        $conn->commit();
+        }
 
         // Success: Redirect to dashboard
         header('Location: dashboard.php?success=Property added successfully');
         exit;
 
     } catch (Exception $e) {
-        // Rollback transaction on error
-        if ($conn && $conn->inTransaction()) {
-            $conn->rollBack();
-        }
-        $error = "An error occurred: " . $e->getMessage(); // Assign specific error message
-         // Log the detailed error for debugging
-         error_log("Add Property Error: " . $e->getMessage() . " | User ID: " . $user_id);
+        $error = "An error occurred: " . $e->getMessage();
+        error_log("Add Property Error: " . $e->getMessage() . " | User ID: " . $user_id);
     }
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !$conn) {
-     // Handle case where DB connection failed before form submission attempt
-     $error = "Database connection failed. Cannot process form.";
 }
-
 
 ?>
 
@@ -332,19 +316,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $conn) { // Only proceed if DB conn
 
             <div class="form-group">
                 <label class="block text-sm font-medium text-gray-700">Amenities</label>
-                 <?php if (!empty($amenities)): ?>
-                 <div class="amenities-grid mt-1">
-                    <?php foreach ($amenities as $amenity): ?>
-                    <label class="amenity-item hover:bg-gray-50">
-                        <input type="checkbox" name="amenities[]" value="<?php echo $amenity['id']; ?>"
-                               <?php if (isset($_POST['amenities']) && is_array($_POST['amenities']) && in_array($amenity['id'], $_POST['amenities'])) echo 'checked'; ?>>
-                        <?php echo htmlspecialchars($amenity['name']); ?>
-                    </label>
-                    <?php endforeach; ?>
-                </div>
-                 <?php else: ?>
-                 <p class="text-sm text-gray-500 mt-1">No amenities found in the database.</p>
-                 <?php endif; ?>
+                <?php if (!empty($amenities)): ?>
+                    <div class="amenities-grid mt-1">
+                        <?php foreach ($amenities as $amenity): ?>
+                            <label class="amenity-item hover:bg-gray-50">
+                                <input type="checkbox" name="amenities[]" value="<?php echo $amenity['id']; ?>"
+                                       <?php if (isset($_POST['amenities']) && is_array($_POST['amenities']) && in_array($amenity['id'], $_POST['amenities'])) echo 'checked'; ?>>
+                                <?php echo htmlspecialchars($amenity['name']); ?>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p class="text-sm text-gray-500 mt-1">No amenities found in the database.</p>
+                <?php endif; ?>
             </div>
 
             <div class="form-group">
