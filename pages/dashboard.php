@@ -55,12 +55,12 @@ $errorMessage = $_GET['error'] ?? null;
     <!-- Dashboard Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-3xl font-bold">Welcome, <?php echo htmlspecialchars($user_name); ?>!</h1>
-            <p class="text-lg text-gray-600 mt-2">Role: <span class="font-semibold"><?php echo ucfirst(htmlspecialchars($user_role)); ?></span></p>
+            <h1 class="text-3xl font-bold text-brand-gray">Welcome, <?php echo htmlspecialchars($user_name); ?>!</h1>
+            <p class="text-lg text-brand-gray/70 mt-2">Role: <span class="font-semibold text-brand-primary"><?php echo ucfirst(htmlspecialchars($user_role)); ?></span></p>
         </div>
         <?php if ($user_role === 'landlord'): ?>
-            <a href="add-property.php" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                + Add New Property
+            <a href="add-property.php" class="px-4 py-2 bg-brand-primary text-white rounded-lg hover:bg-brand-secondary transition-colors hover-grow">
+                <i class="fa-solid fa-plus mr-2"></i>Add New Property
             </a>
         <?php endif; ?>
     </div>
@@ -86,45 +86,45 @@ $errorMessage = $_GET['error'] ?? null;
 
     <!-- Properties/Listings Section -->
     <div class="mb-8">
-        <h2 class="text-2xl font-semibold mb-4">
+        <h2 class="text-2xl font-semibold mb-4 text-brand-gray">
             <?php echo $user_role === 'landlord' ? 'Your Properties' : 'Available Listings'; ?>
         </h2>
 
         <?php if (!empty($properties)): ?>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <?php foreach ($properties as $property): ?>
-                    <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
-                        <div class="relative h-48 bg-gray-200">
+                    <div class="border border-brand-light rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
+                        <div class="relative h-48 bg-brand-light/20">
                             <?php if (!empty($property['image_url']) && $property['image_url'] !== '/images/placeholder.svg'): ?>
                                 <img src="<?= htmlspecialchars($property['image_url']) ?>"
                                      alt="<?= htmlspecialchars($property['title']) ?>"
                                      class="w-full h-full object-cover">
                             <?php else: ?>
-                                <div class="w-full h-full flex items-center justify-center text-gray-500">
+                                <div class="w-full h-full flex items-center justify-center text-brand-gray/50">
                                     <span>No Image Available</span>
                                 </div>
                             <?php endif; ?>
                         </div>
                         <div class="p-4">
-                            <h3 class="text-lg font-semibold mb-1"><?= htmlspecialchars($property['title']) ?></h3>
-                            <p class="text-gray-500 text-sm mb-2"><?= htmlspecialchars($property['address'] ?? 'Location not specified') ?></p>
-                            <p class="font-bold text-lg mb-3">K<?= number_format($property['price']) ?>/month</p>
+                            <h3 class="text-lg font-semibold mb-1 text-brand-gray"><?= htmlspecialchars($property['title']) ?></h3>
+                            <p class="text-brand-gray/70 text-sm mb-2"><?= htmlspecialchars($property['address'] ?? 'Location not specified') ?></p>
+                            <p class="font-bold text-lg mb-3 text-brand-primary">K<?= number_format($property['price']) ?>/month</p>
                             
                             <div class="flex gap-2">
                                 <?php if ($user_role === 'landlord'): ?>
                                     <a href="edit-property.php?id=<?= $property['id'] ?>" 
-                                       class="px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600">
-                                        Edit
+                                       class="px-3 py-1 bg-brand-primary text-white text-sm rounded hover:bg-brand-secondary">
+                                        <i class="fa-solid fa-edit mr-1"></i>Edit
                                     </a>
                                     <a href="delete-property.php?id=<?= $property['id'] ?>" 
                                        class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                                        onclick="return confirm('Are you sure you want to delete this property?')">
-                                        Delete
+                                        <i class="fa-solid fa-trash mr-1"></i>Delete
                                     </a>
                                 <?php endif; ?>
                                 <a href="listing_detail.php?id=<?= $property['id'] ?>" 
-                                   class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 <?= $user_role === 'student' ? 'w-full text-center' : '' ?>">
-                                    View Details
+                                   class="px-3 py-1 bg-brand-gray text-white text-sm rounded hover:bg-brand-gray/80 <?= $user_role === 'student' ? 'w-full text-center' : '' ?>">
+                                    <i class="fa-solid fa-eye mr-1"></i>View Details
                                 </a>
                             </div>
                         </div>
@@ -132,24 +132,32 @@ $errorMessage = $_GET['error'] ?? null;
                 <?php endforeach; ?>
             </div>
         <?php else: ?>
-            <div class="text-center py-8 bg-gray-50 rounded-lg">
+            <div class="text-center py-8 bg-brand-light/10 rounded-lg border border-brand-light">
                 <?php if ($user_role === 'landlord'): ?>
-                    <p class="text-gray-600">You haven't listed any properties yet.</p>
-                    <a href="add-property.php" class="text-blue-500 hover:underline mt-2 inline-block">Add your first property</a>
+                    <p class="text-brand-gray/70">You haven't listed any properties yet.</p>
+                    <a href="add-property.php" class="text-brand-primary hover:text-brand-secondary mt-2 inline-block">
+                        <i class="fa-solid fa-plus mr-1"></i>Add your first property
+                    </a>
                 <?php else: ?>
-                    <p class="text-gray-600">No properties are currently available.</p>
-                    <a href="listings.php" class="text-blue-500 hover:underline mt-2 inline-block">Check back later</a>
+                    <p class="text-brand-gray/70">No properties are currently available.</p>
+                    <a href="listings.php" class="text-brand-primary hover:text-brand-secondary mt-2 inline-block">
+                        Check back later
+                    </a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
     </div>
 
     <!-- Account Actions -->
-    <div class="mt-8 border-t pt-6">
-        <h3 class="text-xl font-semibold mb-3">Account Actions</h3>
+    <div class="mt-8 border-t border-brand-light pt-6">
+        <h3 class="text-xl font-semibold mb-3 text-brand-gray">Account Actions</h3>
         <div class="space-x-4">
-            <a href="edit-profile.php" class="text-blue-500 hover:underline">Edit Profile</a>
-            <a href="logout.php" class="text-red-500 hover:underline">Logout</a>
+            <a href="edit-profile.php" class="text-brand-primary hover:text-brand-secondary">
+                <i class="fa-solid fa-user-edit mr-1"></i>Edit Profile
+            </a>
+            <a href="logout.php" class="text-red-500 hover:text-red-600">
+                <i class="fa-solid fa-sign-out-alt mr-1"></i>Logout
+            </a>
         </div>
     </div>
 </div>

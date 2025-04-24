@@ -263,86 +263,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') { // Only proceed if DB connection wa
 <body class="bg-gray-100">
     <?php include __DIR__ . '/../includes/header.php'; ?>
 
-    <div class="form-container">
-        <h1 class="text-2xl font-bold mb-6">Add New Property</h1>
+    <div class="max-w-4xl mx-auto p-6">
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-brand-gray">Add New Property</h1>
+            <p class="mt-2 text-brand-gray/70">Fill in the details below to list your property.</p>
+        </div>
 
-         <?php if ($error): ?>
-            <div class="alert alert-danger">
-                <strong>Error:</strong> <?php echo htmlspecialchars($error); ?>
+        <?php if ($error): ?>
+            <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
 
-        <?php if (isset($uploadProgress) && $uploadProgress > 0 && $uploadProgress < 100): ?>
-            <div class="progress">
-                <div class="progress-bar" style="width: <?php echo $uploadProgress; ?>%"></div>
-            </div>
-            <p class="text-sm text-gray-600 mb-4">Processing images: <?php echo round($uploadProgress); ?>% complete</p>
-        <?php endif; ?>
-
-        <form action="add-property.php" method="post" enctype="multipart/form-data" id="propertyForm">
-            <div class="form-group">
-                <label for="title" class="block text-sm font-medium text-gray-700">Title *</label>
-                <input type="text" id="title" name="title" class="mt-1 form-control" placeholder="e.g., Cozy Apartment near Campus" required
-                       value="<?php echo isset($_POST['title']) ? htmlspecialchars($_POST['title']) : ''; ?>">
-            </div>
-
-            <div class="form-group">
-                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                <textarea id="description" name="description" class="mt-1 form-control" rows="4"
-                          placeholder="Provide details about the property, rules, etc."><?php echo isset($_POST['description']) ? htmlspecialchars($_POST['description']) : ''; ?></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="price" class="block text-sm font-medium text-gray-700">Price (ZMW per month) *</label>
-                <input type="number" id="price" name="price" class="mt-1 form-control" step="0.01" min="1" placeholder="e.g., 3500" required
-                       value="<?php echo isset($_POST['price']) ? htmlspecialchars($_POST['price']) : ''; ?>">
-            </div>
-
-
-            <div class="form-group">
-                <label for="address" class="block text-sm font-medium text-gray-700">Address (Optional)</label>
-                <input type="text" id="address" name="address" class="mt-1 form-control" placeholder="e.g., 123 Main St, Kitwe"
-                       value="<?php echo isset($_POST['address']) ? htmlspecialchars($_POST['address']) : ''; ?>">
-            </div>
-
-
-            <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700">Location on Map *</label>
-                <div id="map" class="map-container mt-1"></div>
-                 <input type="hidden" id="latitude" name="latitude" value="<?php echo isset($_POST['latitude']) ? htmlspecialchars($_POST['latitude']) : $defaultLat; ?>">
-                 <input type="hidden" id="longitude" name="longitude" value="<?php echo isset($_POST['longitude']) ? htmlspecialchars($_POST['longitude']) : $defaultLng; ?>">
-                <p class="text-xs text-gray-500 mt-1">Click or drag the marker to set the exact property location.</p>
-            </div>
-
-            <div class="form-group">
-                <label class="block text-sm font-medium text-gray-700">Amenities</label>
-                <?php if (!empty($amenities)): ?>
-                    <div class="amenities-grid mt-1">
-                        <?php foreach ($amenities as $amenity): ?>
-                            <label class="amenity-item hover:bg-gray-50">
-                                <input type="checkbox" name="amenities[]" value="<?php echo $amenity['id']; ?>"
-                                       <?php if (isset($_POST['amenities']) && is_array($_POST['amenities']) && in_array($amenity['id'], $_POST['amenities'])) echo 'checked'; ?>>
-                                <?php echo htmlspecialchars($amenity['name']); ?>
-                            </label>
-                        <?php endforeach; ?>
+        <form action="add-property.php" method="POST" enctype="multipart/form-data" class="space-y-6 bg-white p-6 rounded-lg shadow-sm border border-brand-light">
+            <!-- Basic Information -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4 text-brand-gray">Basic Information</h2>
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-brand-gray">Title</label>
+                        <input type="text" 
+                               id="title" 
+                               name="title" 
+                               required 
+                               class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"
+                               value="<?php echo htmlspecialchars($title ?? ''); ?>">
                     </div>
-                <?php else: ?>
-                    <p class="text-sm text-gray-500 mt-1">No amenities found in the database.</p>
-                <?php endif; ?>
-            </div>
 
-            <div class="form-group">
-                <label for="images" class="block text-sm font-medium text-gray-700">Images * (Select one or more)</label>
-                <input type="file" id="images" name="images[]" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" multiple accept="image/jpeg,image/png,image/gif,image/webp" required>
-                <p class="text-xs text-gray-500 mt-1">First image selected will be the primary display image. Max size: 5MB per image.</p>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-brand-gray">Description</label>
+                        <textarea id="description" 
+                                  name="description" 
+                                  rows="4" 
+                                  required 
+                                  class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"><?php echo htmlspecialchars($description ?? ''); ?></textarea>
+                    </div>
 
-                <div id="selectedFiles" class="selected-files" style="display: none;">
-                    <p class="text-sm font-medium text-gray-700">Selected images:</p>
-                    <ul id="fileList" class="text-sm text-gray-600"></ul>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="price" class="block text-sm font-medium text-brand-gray">Price per Month (ZMW)</label>
+                            <input type="number" 
+                                   id="price" 
+                                   name="price" 
+                                   required 
+                                   min="0" 
+                                   class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"
+                                   value="<?php echo htmlspecialchars($price ?? ''); ?>">
+                        </div>
+
+                        <div>
+                            <label for="type" class="block text-sm font-medium text-brand-gray">Property Type</label>
+                            <select id="type" 
+                                    name="type" 
+                                    required 
+                                    class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
+                                <option value="">Select Type</option>
+                                <option value="apartment" <?php echo ($type ?? '') === 'apartment' ? 'selected' : ''; ?>>Apartment</option>
+                                <option value="shared" <?php echo ($type ?? '') === 'shared' ? 'selected' : ''; ?>>Shared Room</option>
+                                <option value="hostel" <?php echo ($type ?? '') === 'hostel' ? 'selected' : ''; ?>>Hostel</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" id="submitBtn" class="btn-primary w-full">Add Property</button>
+            <!-- Location -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4 text-brand-gray">Location</h2>
+                <div>
+                    <label for="address" class="block text-sm font-medium text-brand-gray">Address</label>
+                    <input type="text" 
+                           id="address" 
+                           name="address" 
+                           required 
+                           class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"
+                           value="<?php echo htmlspecialchars($address ?? ''); ?>">
+                </div>
+                <div id="map" class="mt-4 h-64 rounded-lg border border-brand-light"></div>
+                <input type="hidden" id="latitude" name="latitude" value="<?php echo htmlspecialchars($latitude ?? ''); ?>">
+                <input type="hidden" id="longitude" name="longitude" value="<?php echo htmlspecialchars($longitude ?? ''); ?>">
+            </div>
+
+            <!-- Amenities -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4 text-brand-gray">Amenities</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <?php foreach ($amenities as $amenity): ?>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" 
+                                   name="amenities[]" 
+                                   value="<?php echo $amenity['id']; ?>"
+                                   class="rounded border-brand-light text-brand-primary focus:ring-brand-primary">
+                            <span class="ml-2 text-brand-gray"><?php echo htmlspecialchars($amenity['name']); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Images -->
+            <div>
+                <h2 class="text-xl font-semibold mb-4 text-brand-gray">Property Images</h2>
+                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-brand-light border-dashed rounded-md">
+                    <div class="space-y-1 text-center">
+                        <i class="fa-solid fa-cloud-upload-alt text-4xl text-brand-gray/50"></i>
+                        <div class="flex text-sm text-brand-gray/70">
+                            <label for="images" class="relative cursor-pointer rounded-md font-medium text-brand-primary hover:text-brand-secondary focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-brand-primary">
+                                <span>Upload images</span>
+                                <input id="images" name="images[]" type="file" class="sr-only" multiple accept="image/*">
+                            </label>
+                            <p class="pl-1">or drag and drop</p>
+                        </div>
+                        <p class="text-xs text-brand-gray/70">PNG, JPG, GIF up to 10MB each</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-4">
+                <a href="dashboard.php" class="px-4 py-2 border border-brand-light text-brand-gray rounded hover:bg-brand-light/20 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">
+                    Add Property
+                </button>
+            </div>
         </form>
     </div>
 

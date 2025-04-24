@@ -10,100 +10,159 @@ if ($auth->isAuthenticated()) {
     exit();
 }
 
+// Handle email confirmation
+if (isset($_GET['token'])) {
+    $result = $auth->confirmEmail($_GET['token']);
+    
+    if (!isset($result['error'])) {
+        header("Location: login.php?message=Email confirmed successfully! Please login.");
+        exit();
+    } else {
+        $error = "Error confirming email: " . ($result['error']['message'] ?? 'Unknown error');
+    }
+}
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = $_POST["email"];
     $password = $_POST["password"];
     $name = $_POST["name"];
     $role = $_POST["role"];
+    $phone = $_POST["phone"];
 
-    $result = $auth->register($email, $password);
-
-    if (isset($result["error"])) {
-        $error = "Error: " . $result["error"]["message"];
+    // Basic validation
+    if (empty($email) || empty($password) || empty($name) || empty($role)) {
+        $error = "All fields are required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
+    } elseif (strlen($password) < 6) {
+        $error = "Password must be at least 6 characters long.";
+    } elseif (!in_array($role, ['student', 'landlord'])) {
+        $error = "Invalid role selected.";
+    } elseif (!empty($phone) && !preg_match('/^[0-9+\-() ]{10,15}$/', $phone)) {
+        $error = "Invalid phone number format.";
     } else {
-        $success = "Registration successful! Please check your email for confirmation.";
+        $result = $auth->register($email, $password, $name, $role, $phone);
+
+        if (isset($result["error"])) {
+            $error = "Error: " . $result["error"]["message"];
+        } else {
+            $success = "Registration successful! Please check your email to confirm your account.";
+        }
     }
 }
 ?>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md mx-auto bg-white rounded-lg shadow-xl overflow-hidden">
-        <div class="px-6 py-8">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900">Create an Account</h2>
-                <p class="mt-2 text-sm text-gray-600">
-                    Already have an account? 
-                    <a href="login.php" class="text-blue-500 hover:text-blue-700 font-medium">
-                        Sign in
-                    </a>
-                </p>
-            </div>
-
-            <?php if (isset($error)): ?>
-                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if (isset($success)): ?>
-                <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-                    <?php echo htmlspecialchars($success); ?>
-                </div>
-            <?php endif; ?>
-
-            <form method="POST" class="space-y-6">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">
-                        Full Name
-                    </label>
-                    <input type="text" id="name" name="name" required
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">
-                        Email Address
-                    </label>
-                    <input type="email" id="email" name="email" required
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">
-                        Password
-                    </label>
-                    <input type="password" id="password" name="password" required
-                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label for="role" class="block text-sm font-medium text-gray-700">
-                        I am a...
-                    </label>
-                    <select id="role" name="role" required
-                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Select your role</option>
-                        <option value="student">Student</option>
-                        <option value="landlord">Landlord</option>
-                    </select>
-                </div>
-
-                <div>
-                    <button type="submit" 
-                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        Create Account
-                    </button>
-                </div>
-            </form>
+<div class="min-h-screen flex items-center justify-center bg-brand-light/10 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md border border-brand-light">
+        <div>
+            <a href="index.php" class="flex justify-center mb-8 hover:opacity-90 transition-opacity">
+                <!-- Logo SVG -->
+                <svg width="48" height="36" viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Logo content -->
+                </svg>
+            </a>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-brand-gray">
+                Create your account
+            </h2>
+            <p class="mt-2 text-center text-sm text-brand-gray/70">
+                Or
+                <a href="login.php" class="font-medium text-brand-primary hover:text-brand-secondary">
+                    sign in to your account
+                </a>
+            </p>
         </div>
 
-        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <a href="index.php" class="text-sm text-gray-600 hover:text-gray-900 flex items-center justify-center">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                Back to Home
-            </a>
+        <?php if (isset($error)): ?>
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline"><?php echo htmlspecialchars($error); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <?php if (isset($success)): ?>
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline"><?php echo htmlspecialchars($success); ?></span>
+            </div>
+        <?php endif; ?>
+
+        <form class="mt-8 space-y-6" action="sign-up.php" method="POST">
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div>
+                    <label for="name" class="sr-only">Full Name</label>
+                    <input id="name" 
+                           name="name" 
+                           type="text" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light placeholder-brand-gray/50 text-brand-gray rounded-t-md focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm" 
+                           placeholder="Full Name"
+                           value="<?php echo htmlspecialchars($name ?? ''); ?>">
+                </div>
+                <div>
+                    <label for="email" class="sr-only">Email address</label>
+                    <input id="email" 
+                           name="email" 
+                           type="email" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light placeholder-brand-gray/50 text-brand-gray focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm" 
+                           placeholder="Email address"
+                           value="<?php echo htmlspecialchars($email ?? ''); ?>">
+                </div>
+                <div>
+                    <label for="phone" class="sr-only">Phone Number</label>
+                    <input id="phone" 
+                           name="phone" 
+                           type="tel" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light placeholder-brand-gray/50 text-brand-gray focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm" 
+                           placeholder="Phone Number"
+                           value="<?php echo htmlspecialchars($phone ?? ''); ?>">
+                </div>
+                <div>
+                    <label for="role" class="sr-only">Role</label>
+                    <select id="role" 
+                            name="role" 
+                            required 
+                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light text-brand-gray focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm">
+                        <option value="">Select Role</option>
+                        <option value="student" <?php echo ($role ?? '') === 'student' ? 'selected' : ''; ?>>Student</option>
+                        <option value="landlord" <?php echo ($role ?? '') === 'landlord' ? 'selected' : ''; ?>>Landlord</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Password</label>
+                    <input id="password" 
+                           name="password" 
+                           type="password" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light placeholder-brand-gray/50 text-brand-gray focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm" 
+                           placeholder="Password">
+                </div>
+                <div>
+                    <label for="confirm_password" class="sr-only">Confirm Password</label>
+                    <input id="confirm_password" 
+                           name="confirm_password" 
+                           type="password" 
+                           required 
+                           class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light placeholder-brand-gray/50 text-brand-gray rounded-b-md focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm" 
+                           placeholder="Confirm Password">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" 
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand-primary hover:bg-brand-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-primary transition-colors">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <i class="fa-solid fa-user-plus text-brand-primary/50 group-hover:text-brand-primary/70"></i>
+                    </span>
+                    Sign up
+                </button>
+            </div>
+        </form>
+
+        <div class="text-sm text-center text-brand-gray/70">
+            By signing up, you agree to our 
+            <a href="#" class="font-medium text-brand-primary hover:text-brand-secondary">Terms</a> 
+            and 
+            <a href="#" class="font-medium text-brand-primary hover:text-brand-secondary">Privacy Policy</a>
         </div>
     </div>
 </div>

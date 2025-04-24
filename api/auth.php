@@ -54,17 +54,16 @@ class Auth {
         }
     }
 
-
-    // Function to register a user (No changes needed here for role fetching)
-    public function register($email, $password) {
-         $data = json_encode([
+    // Function to register a user with profile creation
+    public function register($email, $password, $name, $role, $phone = null) {
+        $data = json_encode([
             "email" => $email,
-            "password" => $password
-            // Add other data needed for signup if your Supabase function expects it
-            // e.g., 'data' => ['role' => 'student', 'name' => 'Default Name']
-            // Check your Supabase setup (e.g., trigger functions) for how 'profiles' is populated on signup.
+            "password" => $password,
+            "data" => [
+                "name" => $name,
+                "role" => $role
+            ]
         ]);
-
 
         $ch = curl_init($this->supabaseUrl . "/auth/v1/signup");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -75,22 +74,55 @@ class Auth {
         ]);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 
-
         $response = curl_exec($ch);
         curl_close($ch);
 
-
         $result = json_decode($response, true);
 
+        if (isset($result['id'])) {
+            // Create profile in the profiles table
+            $profileData = json_encode([
+                "id" => $result['id'],
+                "name" => $name,
+                "role" => $role,
+                "email" => $email,
+                "phone" => $phone
+            ]);
 
-         // *** IMPORTANT: Ensure your Supabase setup automatically creates a 'profiles' row on signup ***
-         // This might involve a database trigger function listening to 'auth.users' insertions.
-         // If not, you'd need to make another API call here to insert into 'profiles'.
-
+            $ch = curl_init($this->supabaseUrl . "/rest/v1/profiles");
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $profileData);
+            
+            $profileResponse = curl_exec($ch);
+            curl_close($ch);
+        }
 
         return $result;
     }
 
+    // Function to confirm email
+    public function confirmEmail($token, $type = 'signup') {
+        $data = json_encode([
+            "type" => $type,
+            "token" => $token
+        ]);
+
+        $ch = curl_init($this->supabaseUrl . "/auth/v1/verify");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "apikey: " . $this->apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        return json_decode($response, true);
+    }
 
     // Function to log in a user
     public function login($email, $password) {
@@ -142,13 +174,11 @@ class Auth {
         }
     }
 
-
     // Function to check if the user is logged in
     public function isAuthenticated() {
         // Check if both auth and profile data exist in the session
         return isset($_SESSION["user"]) && isset($_SESSION["user"]['auth']) && isset($_SESSION["user"]['profile']);
     }
-
 
     // Function to log out
     public function logout() {
@@ -157,12 +187,10 @@ class Auth {
         exit();
     }
 
-
      // Function to get current user data (auth + profile)
      public function getCurrentUser() {
          return $this->isAuthenticated() ? $_SESSION["user"] : null;
      }
-
 
      // Function to get just the user's role
      public function getUserRole() {
@@ -170,13 +198,85 @@ class Auth {
          return $user ? ($user['profile']['role'] ?? null) : null; // Return role or null if not found/logged in
      }
 
-
       // Function to get just the user's ID
      public function getUserId() {
          $user = $this->getCurrentUser();
          // Get ID from the 'auth' part which comes directly from Supabase auth
          return $user ? ($user['auth']['user']['id'] ?? null) : null;
      }
+
+    // Function to update user profile
+    public function updateProfile($name, $phone = null) {
+        if (!$this->isAuthenticated()) {
+            return ['error' => ['message' => 'Not authenticated']];
+        }
+
+        $userId = $this->getUserId();
+        $data = [
+            'name' => $name,
+            'phone' => $phone
+        ];
+
+        $endpoint = $this->supabaseUrl . '/rest/v1/profiles?id=eq.' . urlencode($userId);
+        
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($statusCode === 204) {
+            // Update successful, refresh session data
+            $profile = $this->getUserProfile($userId, null);
+            if ($profile) {
+                $_SESSION['user']['profile'] = $profile;
+            }
+            return ['success' => true];
+        }
+
+        return ['error' => ['message' => 'Failed to update profile']];
+    }
+
+    public function updatePassword($currentPassword, $newPassword) {
+        if (!$this->isAuthenticated()) {
+            return ['error' => ['message' => 'Not authenticated']];
+        }
+
+        $endpoint = $this->supabaseUrl . '/auth/v1/user';
+        $data = [
+            'password' => $newPassword
+        ];
+
+        // First verify current password
+        $loginResult = $this->login($_SESSION['user']['auth']['user']['email'], $currentPassword);
+        if ($loginResult !== true) {
+            return ['error' => ['message' => 'Current password is incorrect']];
+        }
+
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'apikey: ' . $this->apiKey,
+            'Authorization: Bearer ' . $_SESSION['user']['auth']['access_token']
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($statusCode === 200) {
+            return ['success' => true];
+        }
+
+        return ['error' => ['message' => 'Failed to update password']];
+    }
 }
 
 // If the script is accessed directly with a logout action (e.g., from header.php)

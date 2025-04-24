@@ -62,18 +62,18 @@ try {
         /* Dark/Light mode styles */
         :root {
             --background: #ffffff;
-            --foreground: #1a202c;
+            --foreground: #333333;
             --muted-foreground: #6b7280;
-            --primary:rgb(0, 207, 183);
-            --primary-foreground: #ffffff;
-            --border: #e5e7eb;
+            --primary: #8CC63F;
+            --secondary: #5E8F2D;
+            --border: #DDDDDD;
         }
         .dark-mode {
-            --background: #1a202c;
+            --background: #333333;
             --foreground: #f7fafc;
             --muted-foreground: #a0aec0;
-            --primary: #3b82f6;
-            --primary-foreground: #ffffff;
+            --primary: #8CC63F;
+            --secondary: #5E8F2D;
             --border: #4a5568;
         }
         body {
@@ -90,14 +90,12 @@ try {
 </head>
 <body>
     <div class="flex flex-col min-h-screen">
-       
-
         <!-- Main content -->
         <main class="flex-1">
-            <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8"> <!-- Added padding classes -->
+            <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 <div class="space-y-12">
                     <!-- Hero Section with Fade-In Animation -->
-                    <section class="text-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-500 to-purple-600 text-white animate-fade-in rounded-lg">
+                    <section class="text-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-brand-primary to-brand-secondary text-white animate-fade-in rounded-lg">
                         <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
                             Find Your Perfect Student Home at CBU
                         </h1>
@@ -116,17 +114,17 @@ try {
                     </section>
 
                     <!-- Latest Listings Section -->
-                    <section class="max-w-7xl mx-auto"> <!-- Added max-width and center alignment -->
+                    <section class="max-w-7xl mx-auto">
                         <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-2xl font-bold tracking-tight">Latest Listings</h2>
-                            <a href="properties.php" class="text-primary hover:underline">
+                            <h2 class="text-2xl font-bold tracking-tight text-brand-gray">Latest Listings</h2>
+                            <a href="properties.php" class="text-brand-primary hover:text-brand-secondary">
                                 View all listings
                             </a>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             <?php if (!empty($properties)): ?>
                                 <?php foreach ($properties as $property): ?>
-                                    <div class="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="border border-brand-light rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
                                         <div class="relative h-48">
                                             <?php if (!empty($property['image_url'])): ?>
                                                 <img src="<?php echo htmlspecialchars($property['image_url']); ?>" 
@@ -139,18 +137,18 @@ try {
                                             <?php endif; ?>
                                         </div>
                                         <div class="p-4">
-                                            <h3 class="font-semibold text-lg">
+                                            <h3 class="font-semibold text-lg text-brand-gray">
                                                 <?php echo htmlspecialchars($property['title'] ?? 'Untitled Property'); ?>
                                             </h3>
-                                            <p class="text-sm text-muted-foreground mt-1">
+                                            <p class="text-sm text-brand-gray/70 mt-1">
                                                 <?php echo htmlspecialchars($property['address'] ?? 'Location not specified'); ?>
                                             </p>
                                             <div class="flex justify-between items-center mt-4">
-                                                <span class="font-bold">
+                                                <span class="font-bold text-brand-primary">
                                                     K<?php echo number_format($property['price'] ?? 0); ?>/month
                                                 </span>
                                                 <a href="listing_detail.php?id=<?php echo $property['id']; ?>" 
-                                                   class="text-primary hover:underline">
+                                                   class="px-3 py-1 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">
                                                     View details
                                                 </a>
                                             </div>
@@ -159,7 +157,7 @@ try {
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="col-span-3 text-center py-12">
-                                    <p class="text-muted-foreground">
+                                    <p class="text-brand-gray/70">
                                         <?php echo $error ?? 'No properties available at the moment.'; ?>
                                     </p>
                                 </div>
@@ -169,29 +167,29 @@ try {
 
                     <!-- Why Choose Section with Fade-In Animation -->
                     <section class="text-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
-                        <h2 class="text-3xl font-bold tracking-tight">
+                        <h2 class="text-3xl font-bold tracking-tight text-brand-gray">
                             Why Choose CBU Accommodation Listing?
                         </h2>
-                        <p class="mt-6 max-w-2xl mx-auto text-xl text-muted-foreground">
+                        <p class="mt-6 max-w-2xl mx-auto text-xl text-brand-gray/70">
                             Our platform connects CBU students with trusted landlords, offering a
                             seamless way to find and list off-campus housing.
                         </p>
                         <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                                <h3 class="text-xl font-semibold">For Students</h3>
-                                <p class="mt-4 text-gray-600 dark:text-gray-300">
+                            <div class="bg-white p-6 rounded-lg shadow-md transition-transform transform hover:scale-105 border border-brand-light">
+                                <h3 class="text-xl font-semibold text-brand-primary">For Students</h3>
+                                <p class="mt-4 text-brand-gray/70">
                                     Find safe, affordable, and convenient housing near campus.
                                 </p>
                             </div>
-                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                                <h3 class="text-xl font-semibold">For Landlords</h3>
-                                <p class="mt-4 text-gray-600 dark:text-gray-300">
+                            <div class="bg-white p-6 rounded-lg shadow-md transition-transform transform hover:scale-105 border border-brand-light">
+                                <h3 class="text-xl font-semibold text-brand-primary">For Landlords</h3>
+                                <p class="mt-4 text-brand-gray/70">
                                     Reach a targeted audience of CBU students looking for housing.
                                 </p>
                             </div>
-                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                                <h3 class="text-xl font-semibold">Community Focused</h3>
-                                <p class="mt-4 text-gray-600 dark:text-gray-300">
+                            <div class="bg-white p-6 rounded-lg shadow-md transition-transform transform hover:scale-105 border border-brand-light">
+                                <h3 class="text-xl font-semibold text-brand-primary">Community Focused</h3>
+                                <p class="mt-4 text-brand-gray/70">
                                     Built with the CBU community in mind, ensuring a smooth experience
                                     for all.
                                 </p>

@@ -30,9 +30,9 @@ if (!empty($property['property_amenities'])) {
 
 <div class="max-w-4xl mx-auto p-6">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold"><?= htmlspecialchars($property['title']) ?></h1>
-        <a href="listings.php" class="text-blue-500 hover:underline">
-            Back to Listings
+        <h1 class="text-3xl font-bold text-brand-gray"><?= htmlspecialchars($property['title']) ?></h1>
+        <a href="listings.php" class="text-brand-primary hover:text-brand-secondary transition-colors flex items-center">
+            <i class="fa-solid fa-arrow-left mr-2"></i>Back to Listings
         </a>
     </div>
 
@@ -47,7 +47,7 @@ if (!empty($property['property_amenities'])) {
                              class="rounded-lg w-full h-auto object-cover">
                         
                         <?php if ($image['is_primary']): ?>
-                            <span class="absolute top-2 left-2 bg-blue-500 text-white px-2 py-1 rounded text-sm">
+                            <span class="absolute top-2 left-2 bg-brand-primary text-white px-2 py-1 rounded text-sm">
                                 Primary
                             </span>
                         <?php endif; ?>
@@ -63,55 +63,62 @@ if (!empty($property['property_amenities'])) {
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <h2 class="text-2xl font-semibold">Description</h2>
-            <p class="mt-2 text-gray-700">
+            <h2 class="text-2xl font-semibold text-brand-gray">Description</h2>
+            <p class="mt-2 text-brand-gray/70">
                 <?= nl2br(htmlspecialchars($property['description'] ?? 'No description available')) ?>
             </p>
 
-            <h2 class="text-2xl font-semibold mt-6">Amenities</h2>
+            <h2 class="text-2xl font-semibold mt-6 text-brand-gray">Amenities</h2>
             <?php if (!empty($amenities)): ?>
-                <ul class="mt-2 list-disc list-inside">
+                <ul class="mt-2 space-y-2">
                     <?php foreach ($amenities as $amenity): ?>
-                        <li><?= htmlspecialchars($amenity) ?></li>
+                        <li class="flex items-center text-brand-gray/70">
+                            <i class="fa-solid fa-check text-brand-primary mr-2"></i>
+                            <?= htmlspecialchars($amenity) ?>
+                        </li>
                     <?php endforeach; ?>
                 </ul>
             <?php else: ?>
-                <p class="mt-2 text-gray-700">No amenities listed</p>
+                <p class="mt-2 text-brand-gray/70">No amenities listed</p>
             <?php endif; ?>
 
-            <h2 class="text-2xl font-semibold mt-6">Location</h2>
-            <div id="property-map" class="h-[300px] w-full mt-2"></div>
-            <p class="mt-2 text-gray-500">
+            <h2 class="text-2xl font-semibold mt-6 text-brand-gray">Location</h2>
+            <div id="property-map" class="h-[300px] w-full mt-2 rounded-lg border border-brand-light"></div>
+            <p class="mt-2 text-brand-gray/70">
                 <?= htmlspecialchars($property['address'] ?? 'Location set on map') ?>
             </p>
         </div>
 
-        <div class="bg-gray-100 p-4 rounded-lg">
-            <h2 class="text-2xl font-semibold">Details</h2>
-            <ul class="mt-2 space-y-2">
-                <li>
-                    <strong>Price:</strong> ZMW <?= number_format($property['price']) ?>/month
+        <div class="bg-brand-light/10 p-6 rounded-lg border border-brand-light">
+            <h2 class="text-2xl font-semibold text-brand-gray">Details</h2>
+            <ul class="mt-4 space-y-4">
+                <li class="flex justify-between">
+                    <span class="text-brand-gray/70">Price:</span>
+                    <span class="font-bold text-brand-primary">ZMW <?= number_format($property['price']) ?>/month</span>
                 </li>
-                <li>
-                    <strong>Type:</strong> <?= ucfirst(htmlspecialchars($property['type'] ?? 'Not specified')) ?>
+                <li class="flex justify-between">
+                    <span class="text-brand-gray/70">Type:</span>
+                    <span class="text-brand-gray"><?= ucfirst(htmlspecialchars($property['type'] ?? 'Not specified')) ?></span>
                 </li>
-                <li>
-                    <strong>Landlord:</strong> <?= htmlspecialchars($property['profiles']['name'] ?? 'Unknown') ?>
+                <li class="flex justify-between">
+                    <span class="text-brand-gray/70">Landlord:</span>
+                    <span class="text-brand-gray"><?= htmlspecialchars($property['profiles']['name'] ?? 'Unknown') ?></span>
                 </li>
-                <li>
-                    <strong>Email:</strong> <?= htmlspecialchars($property['profiles']['email'] ?? 'N/A') ?>
-                </li>
-                <?php if (!empty($property['profiles']['phone'])): ?>
-                <li>
-                    <strong>Phone:</strong> <?= htmlspecialchars($property['profiles']['phone']) ?>
-                </li>
-                <?php endif; ?>
             </ul>
 
-            <a href="mailto:<?= htmlspecialchars($property['profiles']['email'] ?? '') ?>" 
-               class="block mt-4 w-full py-2 bg-blue-500 text-white text-center rounded hover:bg-blue-600">
-                Contact Landlord
-            </a>
+            <div class="mt-6 space-y-3">
+                <a href="mailto:<?= htmlspecialchars($property['profiles']['email'] ?? '') ?>" 
+                   class="block w-full py-3 bg-brand-primary text-white text-center rounded hover:bg-brand-secondary transition-colors">
+                    <i class="fa-solid fa-envelope mr-2"></i> Email Landlord
+                </a>
+                
+                <?php if (!empty($property['profiles']['phone'])): ?>
+                <a href="tel:<?= htmlspecialchars($property['profiles']['phone']) ?>" 
+                   class="block w-full py-3 bg-brand-secondary text-white text-center rounded hover:bg-brand-secondary/90 transition-colors">
+                    <i class="fa-solid fa-phone mr-2"></i> Call Landlord
+                </a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -119,6 +126,8 @@ if (!empty($property['property_amenities'])) {
 <!-- Include Leaflet for the map -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Add Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

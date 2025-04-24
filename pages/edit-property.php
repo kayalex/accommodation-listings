@@ -154,63 +154,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body class="bg-gray-50">
     <div class="max-w-4xl mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-6">Edit Property</h1>
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-brand-gray">Edit Property</h1>
+                <p class="mt-2 text-brand-gray/70">Update your property listing details below.</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="listing_detail.php?id=<?= $property['id'] ?>" 
+                   class="px-4 py-2 border border-brand-light text-brand-gray rounded hover:bg-brand-light/20 transition-colors">
+                    <i class="fa-solid fa-eye mr-2"></i>View Listing
+                </a>
+                <a href="dashboard.php" 
+                   class="px-4 py-2 border border-brand-light text-brand-gray rounded hover:bg-brand-light/20 transition-colors">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>Back
+                </a>
+            </div>
+        </div>
 
         <?php if ($error): ?>
-            <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                 <?= htmlspecialchars($error) ?>
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="space-y-6">
+        <form method="POST" class="space-y-6 bg-white p-6 rounded-lg shadow-sm border border-brand-light">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Title</label>
+                <label class="block text-sm font-medium text-brand-gray">Title</label>
                 <input type="text" name="title" value="<?= htmlspecialchars($property['title']) ?>" 
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                       class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50" required>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Description</label>
+                <label class="block text-sm font-medium text-brand-gray">Description</label>
                 <textarea name="description" rows="4" 
-                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><?= htmlspecialchars($property['description']) ?></textarea>
+                          class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"><?= htmlspecialchars($property['description']) ?></textarea>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Price per Month (K)</label>
+                <label class="block text-sm font-medium text-brand-gray">Price per Month (K)</label>
                 <input type="number" name="price" value="<?= htmlspecialchars($property['price']) ?>" 
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" required>
+                       class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50" required>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Address</label>
+                <label class="block text-sm font-medium text-brand-gray">Address</label>
                 <input type="text" name="address" value="<?= htmlspecialchars($property['address']) ?>" 
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                       class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Location</label>
-                <div id="map" class="h-64 mt-1 rounded-md"></div>
+                <label class="block text-sm font-medium text-brand-gray">Location</label>
+                <div id="map" class="h-64 mt-1 rounded-md border border-brand-light"></div>
                 <input type="hidden" name="latitude" id="latitude" value="<?= $property['latitude'] ?>">
                 <input type="hidden" name="longitude" id="longitude" value="<?= $property['longitude'] ?>">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Amenities</label>
+                <label class="block text-sm font-medium text-brand-gray">Amenities</label>
                 <div class="mt-2 grid grid-cols-2 gap-4">
                     <?php foreach ($amenities as $amenity): ?>
                         <label class="inline-flex items-center">
                             <input type="checkbox" name="amenities[]" value="<?= $amenity['id'] ?>"
                                    <?php if (in_array($amenity['id'], array_column($property['property_amenities'] ?? [], 'amenity_id'))): ?>checked<?php endif; ?>
-                                   class="rounded border-gray-300 text-blue-600">
-                            <span class="ml-2"><?= htmlspecialchars($amenity['name']) ?></span>
+                                   class="rounded border-brand-light text-brand-primary focus:ring-brand-primary">
+                            <span class="ml-2 text-brand-gray"><?= htmlspecialchars($amenity['name']) ?></span>
                         </label>
                     <?php endforeach; ?>
                 </div>
             </div>
 
             <div class="flex justify-end space-x-4">
-                <a href="dashboard.php" class="px-4 py-2 border rounded-md hover:bg-gray-50">Cancel</a>
-                <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                <a href="dashboard.php" class="px-4 py-2 border border-brand-light text-brand-gray rounded hover:bg-brand-light/20 transition-colors">Cancel</a>
+                <button type="submit" class="px-4 py-2 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">
                     Save Changes
                 </button>
             </div>
