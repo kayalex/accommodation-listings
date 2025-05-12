@@ -3,6 +3,8 @@ require_once __DIR__ . "/../api/auth.php";
 require_once __DIR__ . "/../includes/header.php";
 
 $auth = new Auth();
+$email = '';  // Initialize email variable
+$error = '';  // Initialize error variable
 
 // If already authenticated, redirect to dashboard
 if ($auth->isAuthenticated()) {
@@ -11,8 +13,8 @@ if ($auth->isAuthenticated()) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = $_POST["email"];
-    $password = $_POST["password"];
+    $email = $_POST["email"] ?? '';
+    $password = $_POST["password"] ?? '';
 
     $loginResult = $auth->login($email, $password);
 
@@ -60,6 +62,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                            type="email" 
                            required 
                            class="appearance-none rounded-none relative block w-full px-3 py-2 border border-brand-light placeholder-brand-gray/50 text-brand-gray rounded-t-md focus:outline-none focus:ring-brand-primary focus:border-brand-primary focus:z-10 sm:text-sm" 
+                           autocomplete="email" 
+                           autofocus 
+                           <?php if ($error): ?>aria-invalid="true"<?php endif; ?>
+                           <?php if (isset($email)): ?>value="<?php echo htmlspecialchars($email); ?>"<?php endif; ?>
                            placeholder="Email address"
                            value="<?php echo htmlspecialchars($email); ?>">
                 </div>
