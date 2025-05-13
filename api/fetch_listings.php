@@ -32,7 +32,8 @@ class PropertyListings {
      * @return array Properties data
      */
     public function getAllProperties($location = null, $type = null, $priceMin = null, $priceMax = null) {
-        $endpoint = $this->supabaseUrl . '/rest/v1/properties?select=*';
+        // Fetch all properties with landlord profile info (name and is_verified)
+        $endpoint = $this->supabaseUrl . '/rest/v1/properties?select=*,profiles(name,is_verified)';
         
         // Add ordering by created_at
         $endpoint .= '&order=created_at.desc';
@@ -79,8 +80,9 @@ class PropertyListings {
      * @return array|null Property data or null if not found
      */
     public function getPropertyById($id) {
+        // Fetch a single property by ID with all related data, including landlord's is_verified status
         $endpoint = $this->supabaseUrl . '/rest/v1/properties?id=eq.' . urlencode($id);
-        $endpoint .= '&select=*,profiles(email,phone,name),property_images(storage_path,is_primary),property_amenities(amenities(name))';
+        $endpoint .= '&select=*,profiles(email,phone,name,is_verified),property_images(storage_path,is_primary),property_amenities(amenities(name))';
         
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);

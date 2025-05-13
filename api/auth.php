@@ -206,7 +206,7 @@ class Auth {
      }
 
     // Function to update user profile
-    public function updateProfile($name, $phone = null) {
+    public function updateProfile($name, $phone = null, $verificationFilePath = null, $verificationStatus = null) {
         if (!$this->isAuthenticated()) {
             return ['error' => ['message' => 'Not authenticated']];
         }
@@ -216,9 +216,16 @@ class Auth {
             'name' => $name,
             'phone' => $phone
         ];
+        if ($verificationFilePath !== null) {
+            $data['verification_document'] = $verificationFilePath;
+        }
+        if ($verificationStatus !== null) {
+            $data['is_verified'] = $verificationStatus;
+        }
+
+        error_log("Updating profile in Supabase with data: " . json_encode($data));
 
         $endpoint = $this->supabaseUrl . '/rest/v1/profiles?id=eq.' . urlencode($userId);
-        
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
@@ -227,18 +234,28 @@ class Auth {
 
         $response = curl_exec($ch);
         $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
+
+        error_log("Supabase profile update response: Status: $statusCode, Response: $response, Error: $curlError");
 
         if ($statusCode === 204) {
             // Update successful, refresh session data
             $profile = $this->getUserProfile($userId, null);
             if ($profile) {
                 $_SESSION['user']['profile'] = $profile;
+                return ['success' => true];
+            } else {
+                error_log("Failed to refresh profile data after update");
+                return ['error' => ['message' => 'Profile updated but failed to refresh data']];
             }
-            return ['success' => true];
         }
 
-        return ['error' => ['message' => 'Failed to update profile']];
+        $errorResponse = json_decode($response, true);
+        $errorMessage = isset($errorResponse['message']) ? $errorResponse['message'] : 
+                       (isset($errorResponse['error']) ? $errorResponse['error'] : 'Unknown error');
+        
+        return ['error' => ['message' => 'Failed to update profile: ' . $errorMessage]];
     }
 
     public function updatePassword($currentPassword, $newPassword) {

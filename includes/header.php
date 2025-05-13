@@ -93,6 +93,12 @@ $userRole = $isLoggedIn ? $auth->getUserRole() : null;
                         </a>
                     <?php endif; ?>
                     
+                    <?php if ($userRole === 'admin'): ?>
+                        <a href="admin.php" class="text-brand-gray hover:text-brand-primary flex items-center hover-grow">
+                            <i class="fa-solid fa-shield-alt mr-2"></i>Admin Dashboard
+                        </a>
+                    <?php endif; ?>
+                    
                     <a href="dashboard.php" class="text-brand-gray hover:text-brand-primary flex items-center hover-grow">
                         <i class="fa-solid fa-gauge-high mr-2"></i>Dashboard
                     </a>

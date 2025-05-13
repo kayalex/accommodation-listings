@@ -1,0 +1,245 @@
+<?php
+require_once __DIR__ . '/../api/auth.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ .'/../config/config.php';
+
+$auth = new Auth();
+if (!$auth->isAuthenticated() || $auth->getUserRole() !== 'admin') {
+    header('Location: login.php');
+    exit();
+}
+
+// Handle approve/reject actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_id'], $_POST['action'])) {
+    $profileId = $_POST['profile_id'];
+    $newStatus = $_POST['action'] === 'approve' ? 1 : 0;
+    
+    // Get supabase credentials from Auth class
+    $supabaseUrl = SUPABASE_URL;
+    $headers = [
+        "Content-Type: application/json",
+        "apikey: " . SUPABASE_KEY,
+        "Authorization: Bearer " . SUPABASE_KEY
+    ];
+    
+    // Update profile status
+    $endpoint = $supabaseUrl . "/rest/v1/profiles?id=eq." . urlencode($profileId);
+    $data = json_encode(['is_verified' => $newStatus]);
+    $ch = curl_init($endpoint);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
+// Set up Supabase API credentials
+$supabaseUrl = SUPABASE_URL;
+$headers = [
+    "Content-Type: application/json",
+    "apikey: " . SUPABASE_KEY,
+    "Authorization: Bearer " . SUPABASE_KEY
+];
+
+// Get active tab (default to users)
+$activeTab = $_GET['tab'] ?? 'users';
+
+// Get filter parameters for users tab
+$filterRole = isset($_GET['role']) ? $_GET['role'] : '';
+$filterVerified = isset($_GET['verified']) ? $_GET['verified'] : ''; // Can be 0, 1, 2 or empty
+
+// Set up bucket name for verification documents
+$bucketName = 'verification';
+?>
+
+<div class="max-w-6xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+    <!-- Dashboard Tabs -->
+    <div class="mb-6 border-b border-gray-200">
+        <nav class="flex space-x-4" aria-label="Tabs">
+            <a href="?tab=users" class="<?= $activeTab === 'users' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                All Users
+            </a>
+            <a href="?tab=verifications" class="<?= $activeTab === 'verifications' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Verification Requests
+            </a>
+        </nav>
+    </div>
+
+    <?php if ($activeTab === 'users'): ?>
+        <!-- All Users Tab -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">All Users</h2>
+
+            <!-- Filters for All Users -->
+            <form method="GET" action="admin.php" class="mb-6">
+                <input type="hidden" name="tab" value="users">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="filter_role" class="block text-sm font-medium text-gray-700">Role</label>
+                        <select id="filter_role" name="role" class="mt-1 block w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                            <option value="">All Roles</option>
+                            <option value="student" <?= $filterRole === 'student' ? 'selected' : '' ?>>Student</option>
+                            <option value="landlord" <?= $filterRole === 'landlord' ? 'selected' : '' ?>>Landlord</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_verified" class="block text-sm font-medium text-gray-700">Verification Status</label>
+                        <select id="filter_verified" name="verified" class="mt-1 block w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                            <option value="">All Statuses</option>
+                            <option value="1" <?= $filterVerified === '1' ? 'selected' : '' ?>>Verified</option>
+                            <option value="0" <?= $filterVerified === '0' ? 'selected' : '' ?>>Not Verified</option>
+                            <option value="2" <?= $filterVerified === '2' ? 'selected' : '' ?>>Pending</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-transparent">&nbsp;</label> <!-- Spacer -->
+                        <button type="submit" class="mt-1 w-full px-4 py-2 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">
+                            Filter Users
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <?php
+            // Fetch all users from profiles table
+            $endpoint = $supabaseUrl . "/rest/v1/profiles?select=*";
+            
+            // Apply role filter
+            if (!empty($filterRole)) {
+                $endpoint .= "&role=eq." . urlencode($filterRole);
+            }
+            // Apply verification status filter
+            if ($filterVerified !== '') { // Check for '' to allow filtering for '0'
+                $endpoint .= "&is_verified=eq." . intval($filterVerified);
+            }
+            
+            $endpoint .= "&order=created_at.desc"; // Optional: order by creation date
+
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            $result = curl_exec($ch);
+            curl_close($ch);
+            $allUsers = json_decode($result, true) ?: [];
+            ?>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-200 rounded">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <?php foreach ($allUsers as $user): ?>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($user['name'] ?? 'N/A') ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($user['email'] ?? 'N/A') ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap capitalize"><?= htmlspecialchars($user['role'] ?? 'N/A') ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($user['phone'] ?? 'N/A') ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <?php if ($user['role'] === 'landlord'): ?>
+                                        <?php if (!empty($user['is_verified']) && $user['is_verified'] == 1): ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Verified</span>
+                                        <?php elseif (!empty($user['is_verified']) && $user['is_verified'] == 2): ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                        <?php else: ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Not Verified</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">N/A</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <?php elseif ($activeTab === 'verifications'): ?>
+        <!-- Verification Requests Tab -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Landlord Verification Requests</h2>
+            
+            <?php
+            // Fetch all pending verifications
+            $endpoint = $supabaseUrl . "/rest/v1/profiles?is_verified=eq.2&role=eq.landlord";
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            $result = curl_exec($ch);
+            curl_close($ch);
+            $pendingLandlords = json_decode($result, true) ?: [];
+            ?>
+
+            <?php if (empty($pendingLandlords)): ?>
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    No pending verification requests.
+                </div>
+            <?php else: ?>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-200 rounded">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verification Document</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <?php foreach ($pendingLandlords as $landlord): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($landlord['name'] ?? 'N/A') ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($landlord['email'] ?? 'N/A') ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap"><?= htmlspecialchars($landlord['phone'] ?? 'N/A') ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php if (!empty($landlord['verification_document'])): ?>
+                                            <?php 
+                                            // Check if the document is stored in Supabase or locally
+                                            $docPath = $landlord['verification_document'];
+                                            if (strpos($docPath, 'user_') === 0) {
+                                                // Supabase storage path
+                                                $docUrl = $supabaseUrl . '/storage/v1/object/public/' . $bucketName . '/' . $docPath;
+                                            } else {
+                                                // Local storage path
+                                                $docUrl = '/' . $docPath;
+                                            }
+                                            ?>
+                                            <a href="<?= htmlspecialchars($docUrl) ?>" target="_blank" class="text-brand-primary hover:text-brand-secondary underline">
+                                                View Document
+                                            </a>
+                                        <?php else: ?>
+                                            <span class="text-red-600">No document</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <form method="POST" class="flex space-x-2">
+                                            <input type="hidden" name="profile_id" value="<?= htmlspecialchars($landlord['id']) ?>">
+                                            <button type="submit" name="action" value="approve" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">
+                                                Approve
+                                            </button>
+                                            <button type="submit" name="action" value="reject" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                                                Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?> 

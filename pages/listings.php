@@ -99,6 +99,20 @@ $propertyTypes = [
                         
                         <p class="text-brand-gray/70 mb-4 line-clamp-2"><?= htmlspecialchars($property['description']) ?></p>
                         
+                        <!-- Landlord Info -->
+                        <div class="flex items-center justify-between text-sm mb-4">
+                            <div class="flex items-center">
+                                <i class="fa-solid fa-user mr-1 text-brand-gray/50"></i>
+                                <span class="text-brand-gray/70"><?= htmlspecialchars($property['profiles']['name'] ?? 'Unknown') ?></span>
+                                
+                                <?php if (!empty($property['profiles']['is_verified']) && $property['profiles']['is_verified'] == 1): ?>
+                                    <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1 text-xs"></i>Verified
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
                         <a href="listing_detail.php?id=<?= $property['id'] ?>" 
                            class="inline-block w-full text-center py-2 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">
                             View Details

@@ -102,7 +102,14 @@ if (!empty($property['property_amenities'])) {
                 </li>
                 <li class="flex justify-between">
                     <span class="text-brand-gray/70">Landlord:</span>
-                    <span class="text-brand-gray"><?= htmlspecialchars($property['profiles']['name'] ?? 'Unknown') ?></span>
+                    <span class="text-brand-gray">
+                        <?= htmlspecialchars($property['profiles']['name'] ?? 'Unknown') ?>
+                        <?php if (!empty($property['profiles']['is_verified']) && $property['profiles']['is_verified'] == 1): ?>
+                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i>Verified
+                            </span>
+                        <?php endif; ?>
+                    </span>
                 </li>
             </ul>
 
