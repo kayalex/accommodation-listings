@@ -99,6 +99,7 @@ try {
                         <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
                             Find Your Perfect Student Home at CBU
                         </h1>
+                        
                         <p class="mt-6 max-w-2xl mx-auto text-xl">
                             Discover comfortable and affordable off-campus accommodations tailored
                             for Copperbelt University students.

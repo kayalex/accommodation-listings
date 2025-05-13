@@ -135,15 +135,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const longitude = <?= $property['longitude'] ?? 0 ?>;
     
     // Initialize map
-    const map = L.map('property-map').setView([latitude, longitude], 16);
+    const map = L.map('property-map').setView([latitude, longitude], 15);
     
     // Add tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
     
-    // Add marker
-    L.marker([latitude, longitude]).addTo(map);
+    // Add radius circle
+    L.circle([latitude, longitude], {
+        color: '#8CC63F',
+        fillColor: '#8CC63F',
+        fillOpacity: 0.2,
+        radius: 500, // 500 meters radius
+        weight: 2
+    }).addTo(map);
 });
 </script>
 

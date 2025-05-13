@@ -134,6 +134,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        // Handle file upload
+        if (isset($_FILES['property_image']) && $_FILES['property_image']['error'] === UPLOAD_ERR_OK) {
+            $tmpName = $_FILES['property_image']['tmp_name'];
+            $originalName = $_FILES['property_image']['name'];
+            $mimeType = $_FILES['property_image']['type'];
+            $user_id = $auth->getUserId();
+
+            // Generate unique filename
+            $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+            $uniqueName = uniqid() . '_' . time() . '.' . $extension;
+
+            // Create the storage path with landlord folder
+            $storagePath = $user_id . '/' . $uniqueName;
+
+            // Prepare request to Supabase Storage API
+            $endpoint = SUPABASE_URL . '/storage/v1/object/properties/' . $storagePath;
+            
+            // Get file contents
+            $fileContents = file_get_contents($tmpName);
+            
+            // Set up cURL request with proper headers
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $fileContents);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . SUPABASE_KEY,
+                'Content-Type: ' . $mimeType,
+                'x-upsert: true'
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        }
+
         header('Location: dashboard.php?success=Property updated successfully');
         exit();
 
@@ -177,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="POST" class="space-y-6 bg-white p-6 rounded-lg shadow-sm border border-brand-light">
+        <form method="POST" enctype="multipart/form-data" class="space-y-6 bg-white p-6 rounded-lg shadow-sm border border-brand-light">
             <div>
                 <label class="block text-sm font-medium text-brand-gray">Title</label>
                 <input type="text" name="title" value="<?= htmlspecialchars($property['title']) ?>" 
@@ -221,6 +255,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
                     <?php endforeach; ?>
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-brand-gray">Property Image</label>
+                <input type="file" name="property_image" 
+                       class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
             </div>
 
             <div class="flex justify-end space-x-4">
