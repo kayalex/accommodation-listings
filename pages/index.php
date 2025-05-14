@@ -105,10 +105,10 @@ try {
                             for Copperbelt University students.
                         </p>
                         <div class="mt-10 flex justify-center gap-4">
-                            <a href="properties.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-transform transform hover:scale-105">
+                            <a href="listings.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-transform transform hover:scale-105">
                                 Browse Listings
                             </a>
-                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-primary/10 hover:bg-primary/20 transition-transform transform hover:scale-105">
+                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-primary/10 hover:bg-white transition-transform transform hover:scale-105">
                                 List Your Property
                             </a>
                         </div>

@@ -9,7 +9,7 @@ $dbName = 'postgres';
 $dbUser = 'postgres';
 $dbPass = 'Typy$ZLD786!uxR'; // Replace with the database password from Supabase
 
-// Note: You'll need to use port 5432 for PostgreSQL
+// Note: port 5432 for PostgreSQL
 $dbPort = '5432';
 
 // Application settings

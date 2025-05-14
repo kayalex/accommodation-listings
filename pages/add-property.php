@@ -1,6 +1,6 @@
 <?php
 // pages/add-property.php
-session_start(); // Ensure session is started for Auth class and $_SESSION access
+// session_start(); // Ensure session is started for Auth class and $_SESSION access
 
 require_once __DIR__ . '/../api/auth.php';
 require_once __DIR__ . '/../config/config.php';
