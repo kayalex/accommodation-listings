@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . "/../api/auth.php";
-require_once __DIR__ . "/../includes/header.php";
 
 $auth = new Auth();
 $email = '';  // Initialize email variable
@@ -25,6 +24,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $error = $loginResult;
     }
 }
+
+// Include header AFTER all potential redirects
+require_once __DIR__ . "/../includes/header.php";
 ?>
 
 <div class="min-h-screen flex items-center justify-center bg-brand-light/10 py-12 px-4 sm:px-6 lg:px-8">
