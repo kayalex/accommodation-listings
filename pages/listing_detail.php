@@ -97,8 +97,8 @@ if (!empty($property['property_amenities'])) {
                     <span class="font-bold text-brand-primary">ZMW <?= number_format($property['price']) ?>/month</span>
                 </li>
                 <li class="flex justify-between">
-                    <span class="text-brand-gray/70">Type:</span>
-                    <span class="text-brand-gray"><?= ucfirst(htmlspecialchars($property['type'] ?? 'Not specified')) ?></span>
+                    <span class="text-brand-gray/70">Target University:</span>
+                    <span class="text-brand-gray"><?= htmlspecialchars($property['target_university'] ?? 'Not specified') ?></span>
                 </li>
                 <li class="flex justify-between">
                     <span class="text-brand-gray/70">Landlord:</span>

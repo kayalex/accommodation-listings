@@ -29,18 +29,19 @@ class PropertyListings {
      * @param string $type Filter by property type
      * @param float $priceMin Minimum price
      * @param float $priceMax Maximum price
+     * @param string $university Filter by target university
      * @return array Properties data
      */
-    public function getAllProperties($location = null, $type = null, $priceMin = null, $priceMax = null) {
+    public function getAllProperties($location = null, $type = null, $priceMin = null, $priceMax = null, $university = null, $amenities = []) {
         // Fetch all properties with landlord profile info (name and is_verified)
-        $endpoint = $this->supabaseUrl . '/rest/v1/properties?select=*,profiles(name,is_verified)';
+        $endpoint = $this->supabaseUrl . '/rest/v1/properties?select=*,profiles(name,is_verified),property_amenities(amenity_id)';
         
         // Add ordering by created_at
         $endpoint .= '&order=created_at.desc';
         
         // Apply filters
         if ($location) {
-            $endpoint .= '&location=eq.' . urlencode($location);
+            $endpoint .= '&address=ilike.' . urlencode('%' . $location . '%');
         }
         
         if ($type && $type !== 'all') {
@@ -53,6 +54,10 @@ class PropertyListings {
         
         if ($priceMax) {
             $endpoint .= '&price=lte.' . floatval($priceMax);
+        }
+
+        if ($university) {
+            $endpoint .= '&target_university=eq.' . urlencode($university);
         }
         
         $ch = curl_init($endpoint);
@@ -68,6 +73,8 @@ class PropertyListings {
         }
         
         $properties = json_decode($response, true);
+        
+        
         
         // Fetch primary images for each property
         return $this->attachPrimaryImages($properties);
@@ -211,6 +218,29 @@ class PropertyListings {
 
         // Or return raw properties if images aren't needed on this specific dashboard view
         // return $properties;
+    }
+
+    /**
+     * Fetch all amenities
+     *
+     * @return array Amenities data
+     */
+    public function getAmenities() {
+        $endpoint = $this->supabaseUrl . '/rest/v1/amenities?select=id,name&order=name.asc';
+        
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        
+        $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($statusCode !== 200) {
+            return [];
+        }
+        
+        return json_decode($response, true) ?: [];
     }
 }
 

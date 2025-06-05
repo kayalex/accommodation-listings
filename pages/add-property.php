@@ -29,6 +29,7 @@ $title = $_POST['title'] ?? '';
 $description = $_POST['description'] ?? '';
 $price = $_POST['price'] ?? '';
 $address = $_POST['address'] ?? '';
+$target_university = $_POST['target_university'] ?? '';
 $defaultLat = -12.80532; // Default map center coordinates
 $defaultLng = 28.24403;
 $latitude = filter_input(INPUT_POST, 'latitude', FILTER_VALIDATE_FLOAT) ?: $defaultLat;
@@ -124,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
         if ($priceInput === false || $priceInput <= 0) throw new Exception("A valid positive price is required.");
         if ($latitude === false || $longitude === false) throw new Exception("Valid map location is required.");
         if (empty($_FILES['images']['name'][0])) throw new Exception("Please upload at least one image.");
+        if (empty($_POST['target_university'])) throw new Exception("Target university is required.");
 
         // 1. Insert property data (using user's access token for RLS)
         $propertyData = [
@@ -133,10 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
             'latitude' => $latitude,
             'longitude' => $longitude,
             'address' => $address ?: null,
-            'landlord_id' => $user_id, // landlord_id should match auth.uid() for RLS
+            'target_university' => $_POST['target_university'],
+            'landlord_id' => $user_id
         ];
 
-        $endpointProperty = $supabaseUrl . '/rest/v1/properties?select=id'; 
+        $endpointProperty = $supabaseUrl . '/rest/v1/properties?select=id';
         $chProperty = curl_init($endpointProperty);
         curl_setopt($chProperty, CURLOPT_POST, true);
         curl_setopt($chProperty, CURLOPT_POSTFIELDS, json_encode($propertyData));
@@ -342,6 +345,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
                         <input type="text" id="title" name="title" required 
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                value="<?php echo htmlspecialchars($title); ?>" placeholder="e.g., Cozy 2 Bedroom Apartment">
+                    </div>
+                    <div>
+                        <label for="target_university" class="block text-sm font-medium text-gray-700">Target University <span class="text-red-500">*</span></label>
+                        <select id="target_university" 
+                                name="target_university" 
+                                required 
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Select Target University</option>
+                            <option value="CBU" <?php echo $target_university === 'CBU' ? 'selected' : ''; ?>>Copperbelt University (CBU)</option>
+                            <option value="UNZA" <?php echo $target_university === 'UNZA' ? 'selected' : ''; ?>>University of Zambia (UNZA)</option>
+                            <option value="UNILUS" <?php echo $target_university === 'UNILUS' ? 'selected' : ''; ?>>University of Lusaka (UNILUS)</option>
+                            <option value="Mulungushi" <?php echo $target_university === 'Mulungushi' ? 'selected' : ''; ?>>Mulungushi University</option>
+                            <option value="Mukuba" <?php echo $target_university === 'Mukuba' ? 'selected' : ''; ?>>Mukuba University</option>
+                            <option value="Copperstone" <?php echo $target_university === 'Copperstone' ? 'selected' : ''; ?>>Copperstone University</option>
+                        </select>
                     </div>
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Description <span class="text-red-500">*</span></label>
