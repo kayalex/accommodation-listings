@@ -17,7 +17,7 @@ try {
     
     // Limit to 6 properties if we got more
     if (!isset($properties['error'])) {
-        $properties = array_slice($properties, 0, 6);
+        $properties = array_slice($properties, 0, 3);
     } else {
         $error = $properties['error'];
         $properties = [];
@@ -108,7 +108,7 @@ try {
                             <a href="listings.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-transform transform hover:scale-105">
                                 Browse Listings
                             </a>
-                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-primary/10 hover:bg-white transition-transform transform hover:scale-105">
+                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary/10 transition-transform transform hover:scale-105">
                                 List Your Property
                             </a>
                         </div>
@@ -202,24 +202,8 @@ try {
         </main>
 
         <!-- Footer -->
-        <footer class="bg-gray-800 text-white py-6 px-4 sm:px-6 lg:px-8">
-            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
-                <p>© <?php echo date('Y'); ?> StudentHousing. All rights reserved.</p>
-                <div class="mt-4 md:mt-0">
-                    <a href="mailto:support@cbuaccommodations.com" class="text-slate-300 hover:underline">
-                        Contact Us
-                    </a>
-                    <span class="mx-2">|</span>
-                    <a href="https://twitter.com/cbuaccommodations" class="text-slate-300 hover:underline">
-                        Twitter
-                    </a>
-                    <span class="mx-2">|</span>
-                    <a href="https://facebook.com/cbuaccommodations" class="text-slate-300 hover:underline">
-                        Facebook
-                    </a>
-                </div>
-            </div>
-        </footer>
+<?php require_once '../includes/footer.php'; ?>
+       
     </div>
 
     <script>

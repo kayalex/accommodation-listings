@@ -89,16 +89,55 @@ if (!empty($property['property_amenities'])) {
             </p>
         </div>
 
-        <div class="bg-brand-light/10 p-6 rounded-lg border border-brand-light">
-            <h2 class="text-2xl font-semibold text-brand-gray">Details</h2>
+        <div class="bg-brand-light/10 p-6 rounded-lg border border-brand-light">            <h2 class="text-2xl font-semibold text-brand-gray">Details</h2>
             <ul class="mt-4 space-y-4">
                 <li class="flex justify-between">
                     <span class="text-brand-gray/70">Price:</span>
-                    <span class="font-bold text-brand-primary">ZMW <?= number_format($property['price']) ?>/month</span>
+                    <span class="font-bold text-brand-primary">ZMW <?= number_format($property['price'] ?? 0) ?>/month</span>
                 </li>
-                <li class="flex justify-between">                    <span class="text-brand-gray/70">Type:</span>
+                <li class="flex justify-between">
+                    <span class="text-brand-gray/70">Type:</span>
                     <span class="text-brand-gray"><?= ucfirst(htmlspecialchars($property['type'] ?? 'Not specified')) ?></span>
                 </li>
+                <li class="flex justify-between">
+                    <span class="text-brand-gray/70">Target University:</span>
+                    <span class="text-brand-gray"><?= htmlspecialchars($property['target_university'] ?? 'Not specified') ?></span>
+                </li>
+                <?php if (!empty($property['profiles'])): ?>
+                <li class="border-t pt-4 mt-4">
+                    <h3 class="font-semibold text-brand-gray mb-2">Landlord Information</h3>
+                    <div class="space-y-2">
+                        <p class="flex items-center">
+                            <i class="fa-solid fa-user mr-2 text-brand-gray/50"></i>
+                            <span class="text-brand-gray"><?= htmlspecialchars($property['profiles']['name']) ?></span>
+                            <?php if ($property['profiles']['is_verified']): ?>
+                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <i class="fas fa-check-circle mr-1"></i>Verified
+                            </span>
+                            <?php endif; ?>
+                        </p>
+                        <?php if (!empty($property['profiles']['phone'])): ?>
+                        <p class="flex items-center">
+                            <i class="fa-solid fa-phone mr-2 text-brand-gray/50"></i>
+                            <a href="tel:<?= htmlspecialchars($property['profiles']['phone']) ?>" 
+                               class="text-brand-primary hover:text-brand-secondary">
+                                <?= htmlspecialchars($property['profiles']['phone']) ?>
+                            </a>
+                        </p>
+                        <?php endif; ?>
+                        <?php if (!empty($property['profiles']['email'])): ?>
+                        <p class="flex items-center">
+                            <i class="fa-solid fa-envelope mr-2 text-brand-gray/50"></i>
+                            <a href="mailto:<?= htmlspecialchars($property['profiles']['email']) ?>" 
+                               class="text-brand-primary hover:text-brand-secondary">
+                                <?= htmlspecialchars($property['profiles']['email']) ?>
+                            </a>
+                        </p>
+                        <?php endif; ?>
+                    </div>
+                </li>
+                <?php endif; ?>
+            </ul>
                 <li class="flex justify-between">
                     <span class="text-brand-gray/70">Target University:</span>
                     <span class="text-brand-gray"><?= htmlspecialchars($property['target_university'] ?? 'Not specified') ?></span>
@@ -160,6 +199,26 @@ document.addEventListener('DOMContentLoaded', function() {
         radius: 500, // 500 meters radius
         weight: 2
     }).addTo(map);
+});
+</script>
+
+<?php // Initialize map with property coordinates
+$latitude = $property['latitude'] ?? -12.80532; // Default to Zambia's approximate center
+$longitude = $property['longitude'] ?? 28.24403;
+?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('property-map').setView([<?= $latitude ?>, <?= $longitude ?>], 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    L.marker([<?= $latitude ?>, <?= $longitude ?>])
+        .addTo(map)
+        .bindPopup("<?= htmlspecialchars($property['title']) ?>")
+        .openPopup();
 });
 </script>
 

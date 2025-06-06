@@ -17,22 +17,34 @@ $universities = [
     'Copperstone' => 'Copperstone University'
 ];
 
-// Get filter parameters
-$targetUniversity = isset($_GET['university']) ? $_GET['university'] : '';
-$type = isset($_GET['type']) ? $_GET['type'] : '';
-$priceMin = isset($_GET['priceMin']) ? $_GET['priceMin'] : '';
-$priceMax = isset($_GET['priceMax']) ? $_GET['priceMax'] : '';
+
+
+// Get and sanitize filter parameters
+$targetUniversity = isset($_GET['university']) ? htmlspecialchars(trim($_GET['university'])) : '';
+$type = isset($_GET['type']) ? htmlspecialchars(trim($_GET['type'])) : '';
+$priceMin = filter_input(INPUT_GET, 'priceMin', FILTER_VALIDATE_FLOAT);
+$priceMax = filter_input(INPUT_GET, 'priceMax', FILTER_VALIDATE_FLOAT);
+
+// Validate price ranges
+if ($priceMin !== false && $priceMax !== false && $priceMin > $priceMax) {
+    $temp = $priceMin;
+    $priceMin = $priceMax;
+    $priceMax = $temp;
+}
+
+// Ensure non-negative prices
+$priceMin = ($priceMin !== false && $priceMin >= 0) ? $priceMin : '';
+$priceMax = ($priceMax !== false && $priceMax >= 0) ? $priceMax : '';
+
+// Validate university selection
+if (!empty($targetUniversity) && !array_key_exists($targetUniversity, $universities)) {
+    $targetUniversity = '';
+}
+
+
 
 // Fetch properties with filters
 $properties = $listingApi->getAllProperties($targetUniversity, $type, $priceMin, $priceMax);
-
-// Property types for the dropdown
-$propertyTypes = [
-    'all' => 'All Types',
-    'apartment' => 'Apartment',
-    'shared' => 'Shared',
-    'hostel' => 'Hostel'
-];
 ?>
 
 <div class="max-w-6xl mx-auto p-6">
@@ -51,15 +63,7 @@ $propertyTypes = [
                 </select>
             </div>
 
-            <div>
-                <select name="type" class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
-                    <?php foreach ($propertyTypes as $value => $label): ?>
-                        <option value="<?= $value ?>" <?= $type === $value ? 'selected' : '' ?>>
-                            <?= $label ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+            
 
             <div>
                 <input type="number" 

@@ -298,9 +298,13 @@ $canUploadVerification = ($isVerified !== 1); // User can upload if not (0), pen
                                       file:rounded-full file:border-0
                                       file:text-sm file:font-semibold
                                       file:bg-brand-primary/10 file:text-brand-primary
-                                      hover:file:bg-brand-primary/20"
-                               accept=".jpg,.jpeg,.png,.pdf">
+                                      hover:file:bg-brand-primary/20"                               accept=".jpg,.jpeg,.png,.pdf" onchange="handleFileSelect(this)">
                     <?php endif; ?>
+
+                    <div id="filePreviewContainer" class="mt-4 hidden">
+                        <img id="thumbnailPreview" class="hidden max-w-sm h-auto rounded border" />
+                        <p id="pdfPreviewName" class="hidden text-sm text-brand-gray"></p>
+                    </div>
                     
                     <p class="mt-3 text-sm whitespace-pre-line text-brand-gray/70"><?php echo htmlspecialchars($uploadMessage); ?></p>
                     
@@ -386,45 +390,50 @@ $canUploadVerification = ($isVerified !== 1); // User can upload if not (0), pen
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const verificationDocumentInput = document.getElementById('verification_document_input');
+function handleFileSelect(input) {
+    const filePreviewContainer = document.getElementById('filePreviewContainer');
     const thumbnailPreview = document.getElementById('thumbnailPreview');
     const pdfPreviewName = document.getElementById('pdfPreviewName');
+    const file = input.files[0];
 
-    if (verificationDocumentInput && thumbnailPreview && pdfPreviewName) {
-        verificationDocumentInput.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        thumbnailPreview.src = e.target.result;
-                        thumbnailPreview.classList.remove('hidden');
-                        pdfPreviewName.classList.add('hidden');
-                        pdfPreviewName.textContent = '';
-                    }
-                    reader.readAsDataURL(file);
-                } else if (file.type === 'application/pdf') {
-                    thumbnailPreview.classList.add('hidden');
-                    thumbnailPreview.src = '#'; // Clear image src
-                    pdfPreviewName.textContent = 'Selected PDF: ' + file.name;
-                    pdfPreviewName.classList.remove('hidden');
-                } else {
-                    // Not an image or PDF, clear previews
-                    thumbnailPreview.classList.add('hidden');
-                    thumbnailPreview.src = '#';
-                    pdfPreviewName.classList.add('hidden');
-                    pdfPreviewName.textContent = 'File selected: ' + file.name + ' (Preview not available)';
-                    pdfPreviewName.classList.remove('hidden');
-
-                }
-            } else {
-                // No file selected, hide previews
-                thumbnailPreview.classList.add('hidden');
-                thumbnailPreview.src = '#';
+    if (file) {
+        filePreviewContainer.classList.remove('hidden');
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                thumbnailPreview.src = e.target.result;
+                thumbnailPreview.classList.remove('hidden');
                 pdfPreviewName.classList.add('hidden');
-                pdfPreviewName.textContent = '';
             }
+            reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf') {
+            thumbnailPreview.classList.add('hidden');
+            thumbnailPreview.src = '#'; // Clear image src
+            pdfPreviewName.textContent = 'Selected PDF: ' + file.name;
+            pdfPreviewName.classList.remove('hidden');
+        } else {
+            // Not an image or PDF, clear previews
+            thumbnailPreview.classList.add('hidden');
+            thumbnailPreview.src = '#';
+            pdfPreviewName.classList.add('hidden');
+            pdfPreviewName.textContent = 'File selected: ' + file.name + ' (Preview not available)';
+            pdfPreviewName.classList.remove('hidden');
+        }
+    } else {
+        // No file selected, hide previews
+        thumbnailPreview.classList.add('hidden');
+        thumbnailPreview.src = '#';
+        pdfPreviewName.classList.add('hidden');
+        pdfPreviewName.textContent = '';
+    }
+}
+
+// Event listener for changes to verification document input
+document.addEventListener('DOMContentLoaded', function() {
+    const verificationDocumentInput = document.getElementById('verification_document_input');
+    if (verificationDocumentInput) {
+        verificationDocumentInput.addEventListener('change', function(event) {
+            handleFileSelect(this);
         });
     }
 });

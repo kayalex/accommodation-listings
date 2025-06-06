@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_id'], $_POST['action'])) {
     try {
         $profileId = $_POST['profile_id'];
-        $newStatus = $_POST['action'] === 'approve' ? 1 : 0;
+        $newStatus = $_POST['action'] === 'approve' ? 1 : 3; // 1 for approved, 3 for rejected
         
         // Get supabase credentials from Auth class
         $supabaseUrl = SUPABASE_URL;
@@ -79,13 +79,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_id'], $_POST[
             "apikey: " . SUPABASE_KEY,
             "Authorization: Bearer " . SUPABASE_KEY
         ];
-        
-        // Update profile status
+          // If rejecting, first get the current profile to get the document path
+        if ($_POST['action'] === 'reject') {
+            $endpoint = $supabaseUrl . "/rest/v1/profiles?id=eq." . urlencode($profileId) . "&select=verification_document";
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $response = curl_exec($ch);
+            $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($statusCode === 200) {
+                $profile = json_decode($response, true)[0] ?? null;
+                if ($profile && !empty($profile['verification_document'])) {
+                    $docPath = $profile['verification_document'];
+                    
+                    // If document is in Supabase storage, delete it
+                    if (strpos($docPath, 'user_') === 0) {
+                        $endpointDelete = $supabaseUrl . '/storage/v1/object/' . $bucketName . '/' . $docPath;
+                        $ch = curl_init($endpointDelete);
+                        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                        $delResponse = curl_exec($ch);
+                        $delStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+
+                        if ($delStatusCode !== 200) {
+                            error_log("Failed to delete verification document: $docPath. Status: $delStatusCode");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update profile status with empty document path if rejecting
+        $updateData = ['is_verified' => $newStatus];
+        if ($_POST['action'] === 'reject') {
+            $updateData['verification_document'] = null; // Clear the document path
+        }
+
         $endpoint = $supabaseUrl . "/rest/v1/profiles?id=eq." . urlencode($profileId);
-        $data = json_encode(['is_verified' => $newStatus]);
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($updateData));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $response = curl_exec($ch);
@@ -247,11 +284,12 @@ require_once __DIR__ . '/../includes/header.php';
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <?php if ($user['role'] === 'landlord'): ?>
                                         <?php if (!empty($user['is_verified']) && $user['is_verified'] == 1): ?>
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Verified</span>
-                                        <?php elseif (!empty($user['is_verified']) && $user['is_verified'] == 2): ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Verified</span>                                        <?php elseif (!empty($user['is_verified']) && $user['is_verified'] == 2): ?>
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                        <?php elseif (!empty($user['is_verified']) && $user['is_verified'] == 3): ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Rejected</span>
                                         <?php else: ?>
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Not Verified</span>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Not Verified</span>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">N/A</span>
@@ -308,7 +346,7 @@ require_once __DIR__ . '/../includes/header.php';
             $priceMin = isset($_GET['price_min']) ? floatval($_GET['price_min']) : null;
             $priceMax = isset($_GET['price_max']) ? floatval($_GET['price_max']) : null;
             
-            $properties = $listingApi->getAllProperties(null, null, $priceMin, $priceMax, $university);
+            $properties = $listingApi->getAllProperties($university, null, $priceMin, $priceMax);
             ?>
 
             <?php if (!empty($properties) && !isset($properties['error'])): ?>
