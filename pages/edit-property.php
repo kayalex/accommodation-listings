@@ -39,6 +39,16 @@ if (!$property || $property['landlord_id'] !== $auth->getUserId()) {
 $error = null;
 $amenities = [];
 
+// Define available universities
+$universities = [
+    'CBU' => 'Copperbelt University (CBU)',
+    'UNZA' => 'University of Zambia (UNZA)',
+    'UNILUS' => 'University of Lusaka (UNILUS)',
+    'Mulungushi' => 'Mulungushi University',
+    'Mukuba' => 'Mukuba University',
+    'Copperstone' => 'Copperstone University'
+];
+
 try {
     $endpoint = SUPABASE_URL . '/rest/v1/amenities?select=id,name&order=name.asc';
     $headers = [
@@ -73,11 +83,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $latitude = filter_input(INPUT_POST, 'latitude', FILTER_VALIDATE_FLOAT);
         $longitude = filter_input(INPUT_POST, 'longitude', FILTER_VALIDATE_FLOAT);
         $selectedAmenities = isset($_POST['amenities']) ? $_POST['amenities'] : [];
+        $targetUniversity = isset($_POST['university']) ? trim($_POST['university']) : null;
 
         // Basic validation
         if (empty($title)) throw new Exception("Title is required");
         if ($price === false || $price <= 0) throw new Exception("Valid price is required");
         if ($latitude === false || $longitude === false) throw new Exception("Valid location is required");
+        if ($targetUniversity && !array_key_exists($targetUniversity, $universities)) {
+            throw new Exception("Invalid target university selected");
+        }
 
         // Update property data
         $propertyData = [
@@ -86,7 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'price' => $price,
             'address' => $address,
             'latitude' => $latitude,
-            'longitude' => $longitude
+            'longitude' => $longitude,
+            'target_university' => $targetUniversity
         ];
 
         // Update property in Supabase
@@ -218,10 +233,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                        class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50" required>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-brand-gray">Description</label>
+            <div>                <label class="block text-sm font-medium text-brand-gray">Description</label>
                 <textarea name="description" rows="4" 
                           class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"><?= htmlspecialchars($property['description']) ?></textarea>
+
+                <div class="mt-4">
+                    <label for="target_university" class="block text-sm font-medium text-brand-gray">Target University</label>
+                    <select id="target_university" 
+                            name="target_university" 
+                            class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
+                        <option value="">Select a university</option>
+                        <?php foreach ($universities as $code => $name): ?>
+                            <option value="<?php echo htmlspecialchars($code); ?>" 
+                                    <?php echo ($property['target_university'] === $code) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($name); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="mt-1 text-sm text-brand-gray/70">Select the university this property is targeted towards</p>
+                </div>
             </div>
 
             <div>
@@ -255,6 +285,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </label>
                     <?php endforeach; ?>
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-brand-gray">Target University</label>
+                <select name="university" 
+                        class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
+                    <option value="">Select a university</option>
+                    <?php foreach ($universities as $key => $university): ?>
+                        <option value="<?= $key ?>" <?php if ($property['target_university'] === $key): ?>selected<?php endif; ?>>
+                            <?= htmlspecialchars($university) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <div>

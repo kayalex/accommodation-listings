@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../api/auth.php';
-require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ .'/../config/config.php';
 
 $auth = new Auth();
@@ -9,29 +8,100 @@ if (!$auth->isAuthenticated() || $auth->getUserRole() !== 'admin') {
     exit();
 }
 
+// Initialize variables for messages
+$successMessage = $_GET['success'] ?? null;
+$errorMessage = $_GET['error'] ?? null;
+
+// Get active tab (default to users)
+$activeTab = $_GET['tab'] ?? 'users';
+
+// Handle property deletion
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_property') {
+    $propertyId = isset($_POST['property_id']) ? intval($_POST['property_id']) : 0;
+    
+    if ($propertyId) {
+        try {
+            // Delete property images from storage and database
+            $endpoint = SUPABASE_URL . '/rest/v1/property_images?property_id=eq.' . $propertyId;
+            $headers = [
+                "Content-Type: application/json",
+                "apikey: " . SUPABASE_KEY,
+                "Authorization: Bearer " . SUPABASE_KEY
+            ];
+            
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_exec($ch);
+            curl_close($ch);
+            
+            // Delete property amenities
+            $endpoint = SUPABASE_URL . '/rest/v1/property_amenities?property_id=eq.' . $propertyId;
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_exec($ch);
+            curl_close($ch);
+            
+            // Delete the property itself
+            $endpoint = SUPABASE_URL . '/rest/v1/properties?id=eq.' . $propertyId;
+            $ch = curl_init($endpoint);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            $response = curl_exec($ch);
+            $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);            if ($statusCode === 204) {
+                $successMessage = 'Property deleted successfully';
+                $activeTab = 'properties';
+            } else {
+                throw new Exception("Failed to delete property");
+            }
+        } catch (Exception $e) {
+            $errorMessage = $e->getMessage();
+            $activeTab = 'properties';
+        }
+    }
+}
+
 // Handle approve/reject actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['profile_id'], $_POST['action'])) {
-    $profileId = $_POST['profile_id'];
-    $newStatus = $_POST['action'] === 'approve' ? 1 : 0;
-    
-    // Get supabase credentials from Auth class
-    $supabaseUrl = SUPABASE_URL;
-    $headers = [
-        "Content-Type: application/json",
-        "apikey: " . SUPABASE_KEY,
-        "Authorization: Bearer " . SUPABASE_KEY
-    ];
-    
-    // Update profile status
-    $endpoint = $supabaseUrl . "/rest/v1/profiles?id=eq." . urlencode($profileId);
-    $data = json_encode(['is_verified' => $newStatus]);
-    $ch = curl_init($endpoint);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_exec($ch);
-    curl_close($ch);
+    try {
+        $profileId = $_POST['profile_id'];
+        $newStatus = $_POST['action'] === 'approve' ? 1 : 0;
+        
+        // Get supabase credentials from Auth class
+        $supabaseUrl = SUPABASE_URL;
+        $headers = [
+            "Content-Type: application/json",
+            "apikey: " . SUPABASE_KEY,
+            "Authorization: Bearer " . SUPABASE_KEY
+        ];
+        
+        // Update profile status
+        $endpoint = $supabaseUrl . "/rest/v1/profiles?id=eq." . urlencode($profileId);
+        $data = json_encode(['is_verified' => $newStatus]);
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($statusCode === 204) {
+            $successMessage = $_POST['action'] === 'approve' ? 'Landlord verified successfully' : 'Landlord rejected successfully';
+            $activeTab = 'verifications';
+        } else {
+            throw new Exception("Failed to update verification status");
+        }
+    } catch (Exception $e) {
+        $errorMessage = $e->getMessage();
+        $activeTab = 'verifications';
+    }
 }
 
 // Set up Supabase API credentials
@@ -51,16 +121,46 @@ $filterVerified = isset($_GET['verified']) ? $_GET['verified'] : ''; // Can be 0
 
 // Set up bucket name for verification documents
 $bucketName = 'verification';
+
+// Now include the header after all logic is done
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="max-w-6xl mx-auto p-6">
     <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+    <?php if ($successMessage): ?>
+        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            <?= htmlspecialchars($successMessage) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($errorMessage): ?>
+        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <?= htmlspecialchars($errorMessage) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['error'])): ?>
+        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <?= htmlspecialchars($_GET['error']) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET['success'])): ?>
+        <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            <?= htmlspecialchars($_GET['success']) ?>
+        </div>
+    <?php endif; ?>
 
     <!-- Dashboard Tabs -->
     <div class="mb-6 border-b border-gray-200">
         <nav class="flex space-x-4" aria-label="Tabs">
             <a href="?tab=users" class="<?= $activeTab === 'users' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 All Users
+            </a>
+            <a href="?tab=properties" class="<?= $activeTab === 'properties' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                Manage Properties
             </a>
             <a href="?tab=verifications" class="<?= $activeTab === 'verifications' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Verification Requests
@@ -163,6 +263,115 @@ $bucketName = 'verification';
                 </table>
             </div>
         </div>
+    <?php elseif ($activeTab === 'properties'): ?>
+        <!-- Properties Management Tab -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Property Listings Management</h2>
+            
+            <!-- Properties Filter -->
+            <form method="GET" action="admin.php" class="mb-6">
+                <input type="hidden" name="tab" value="properties">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label for="filter_university" class="block text-sm font-medium text-gray-700">University</label>
+                        <select id="filter_university" name="university" class="mt-1 block w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                            <option value="">All Universities</option>
+                            <option value="CBU" <?= isset($_GET['university']) && $_GET['university'] === 'CBU' ? 'selected' : '' ?>>Copperbelt University (CBU)</option>
+                            <option value="UNZA" <?= isset($_GET['university']) && $_GET['university'] === 'UNZA' ? 'selected' : '' ?>>University of Zambia (UNZA)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filter_price_min" class="block text-sm font-medium text-gray-700">Min Price</label>
+                        <input type="number" id="filter_price_min" name="price_min" value="<?= $_GET['price_min'] ?? '' ?>" 
+                               class="mt-1 block w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                    </div>
+                    <div>
+                        <label for="filter_price_max" class="block text-sm font-medium text-gray-700">Max Price</label>
+                        <input type="number" id="filter_price_max" name="price_max" value="<?= $_GET['price_max'] ?? '' ?>"
+                               class="mt-1 block w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-transparent">&nbsp;</label>
+                        <button type="submit" class="mt-1 w-full px-4 py-2 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">
+                            Filter Properties
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <?php
+            // Fetch all properties with filters
+            require_once __DIR__ . '/../api/fetch_listings.php';
+            $listingApi = new PropertyListings();
+            
+            $university = isset($_GET['university']) ? $_GET['university'] : null;
+            $priceMin = isset($_GET['price_min']) ? floatval($_GET['price_min']) : null;
+            $priceMax = isset($_GET['price_max']) ? floatval($_GET['price_max']) : null;
+            
+            $properties = $listingApi->getAllProperties(null, null, $priceMin, $priceMax, $university);
+            ?>
+
+            <?php if (!empty($properties) && !isset($properties['error'])): ?>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-200 rounded">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">University</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Landlord</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <?php foreach ($properties as $property): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($property['title']) ?></div>
+                                        <div class="text-sm text-gray-500"><?= htmlspecialchars($property['address']) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">K<?= number_format($property['price']) ?>/month</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900"><?= htmlspecialchars($property['target_university'] ?? 'Not specified') ?></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900"><?= htmlspecialchars($property['profiles']['name'] ?? 'Unknown') ?></div>
+                                        <?php if (!empty($property['profiles']['is_verified']) && $property['profiles']['is_verified'] == 1): ?>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-check-circle mr-1"></i>Verified
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php if (!empty($property['is_published']) && $property['is_published'] == 1): ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Published</span>
+                                        <?php else: ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Draft</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                        <a href="listing_detail.php?id=<?= $property['id'] ?>" class="text-brand-primary hover:text-brand-secondary">View</a>
+                                        <form method="POST" class="inline-block">
+                                            <input type="hidden" name="property_id" value="<?= $property['id'] ?>">
+                                            <button type="submit" name="action" value="delete_property" 
+                                                    onclick="return confirm('Are you sure you want to delete this property? This action cannot be undone.')"
+                                                    class="text-red-600 hover:text-red-900">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <div class="bg-gray-100 border border-gray-200 text-gray-700 px-4 py-3 rounded">
+                    No properties found matching the current filters.
+                </div>
+            <?php endif; ?>
+        </div>
     <?php elseif ($activeTab === 'verifications'): ?>
         <!-- Verification Requests Tab -->
         <div class="bg-white shadow-md rounded-lg p-6">
@@ -242,4 +451,4 @@ $bucketName = 'verification';
     <?php endif; ?>
 </div>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?> 
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

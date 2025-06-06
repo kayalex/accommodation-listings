@@ -6,14 +6,25 @@ require_once '../api/fetch_listings.php';
 // Create an instance of PropertyListings
 $listingApi = new PropertyListings();
 
+// Define available universities
+$universities = [
+    '' => 'All Universities',
+    'CBU' => 'Copperbelt University (CBU)',
+    'UNZA' => 'University of Zambia (UNZA)',
+    'UNILUS' => 'University of Lusaka (UNILUS)',
+    'Mulungushi' => 'Mulungushi University',
+    'Mukuba' => 'Mukuba University',
+    'Copperstone' => 'Copperstone University'
+];
+
 // Get filter parameters
-$location = isset($_GET['location']) ? $_GET['location'] : '';
+$targetUniversity = isset($_GET['university']) ? $_GET['university'] : '';
 $type = isset($_GET['type']) ? $_GET['type'] : '';
 $priceMin = isset($_GET['priceMin']) ? $_GET['priceMin'] : '';
 $priceMax = isset($_GET['priceMax']) ? $_GET['priceMax'] : '';
 
 // Fetch properties with filters
-$properties = $listingApi->getAllProperties($location, $type, $priceMin, $priceMax);
+$properties = $listingApi->getAllProperties($targetUniversity, $type, $priceMin, $priceMax);
 
 // Property types for the dropdown
 $propertyTypes = [
@@ -29,13 +40,15 @@ $propertyTypes = [
 
     <!-- Filters Section -->
     <form method="GET" action="listings.php" class="mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-                <input type="text" 
-                       name="location" 
-                       placeholder="Search by location..." 
-                       value="<?= htmlspecialchars($location) ?>"
-                       class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">            <div>
+                <select name="university" 
+                        class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                    <?php foreach ($universities as $value => $label): ?>
+                        <option value="<?= $value ?>" <?= $targetUniversity === $value ? 'selected' : '' ?>>
+                            <?= $label ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <div>

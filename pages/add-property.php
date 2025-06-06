@@ -39,9 +39,17 @@ $selectedAmenitiesPost = isset($_POST['amenities']) && is_array($_POST['amenitie
 $error = null;
 $amenities = [];
 $supabaseUrl = SUPABASE_URL;
-// SUPABASE_KEY is the anon key. We'll use $user_access_token for operations requiring user context.
-// For admin operations like bucket creation, if RLS doesn't allow anon key, service_role key would be needed.
-$anonKey = SUPABASE_KEY; 
+$anonKey = SUPABASE_KEY;
+
+// Define available universities
+$universities = [
+    'CBU' => 'Copperbelt University (CBU)',
+    'UNZA' => 'University of Zambia (UNZA)',
+    'UNILUS' => 'University of Lusaka (UNILUS)',
+    'Mulungushi' => 'Mulungushi University',
+    'Mukuba' => 'Mukuba University',
+    'Copperstone' => 'Copperstone University'
+];
 
 // Standard headers for Supabase REST API (getting data using anon key, if RLS allows)
 $standardHeaders = [
@@ -114,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
         $description = trim($_POST['description']);
         $priceInput = filter_input(INPUT_POST, 'price', FILTER_VALIDATE_FLOAT);
         $address = trim($_POST['address']);
+        $targetUniversity = trim($_POST['target_university']);
         $latitude = filter_input(INPUT_POST, 'latitude', FILTER_VALIDATE_FLOAT, ['options' => ['default' => $defaultLat]]);
         $longitude = filter_input(INPUT_POST, 'longitude', FILTER_VALIDATE_FLOAT, ['options' => ['default' => $defaultLng]]);
         $selectedAmenities = isset($_POST['amenities']) && is_array($_POST['amenities']) ? $_POST['amenities'] : [];
@@ -124,8 +133,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
         if ($priceInput === false || $priceInput <= 0) throw new Exception("A valid positive price is required.");
         if ($latitude === false || $longitude === false) throw new Exception("Valid map location is required.");
         if (empty($_FILES['images']['name'][0])) throw new Exception("Please upload at least one image.");
+        if (empty($targetUniversity)) throw new Exception("Please select a target university.");
 
-        // 1. Insert property data (using user's access token for RLS)
+        // Insert property data
         $propertyData = [
             'title' => $title,
             'description' => $description,
@@ -133,7 +143,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
             'latitude' => $latitude,
             'longitude' => $longitude,
             'address' => $address ?: null,
-            'landlord_id' => $user_id, // landlord_id should match auth.uid() for RLS
+            'landlord_id' => $user_id,
+            'target_university' => $targetUniversity
         ];
 
         $endpointProperty = $supabaseUrl . '/rest/v1/properties?select=id'; 
@@ -342,12 +353,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $error === null) {
                         <input type="text" id="title" name="title" required 
                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                value="<?php echo htmlspecialchars($title); ?>" placeholder="e.g., Cozy 2 Bedroom Apartment">
-                    </div>
-                    <div>
+                    </div>                    <div>
                         <label for="description" class="block text-sm font-medium text-gray-700">Description <span class="text-red-500">*</span></label>
                         <textarea id="description" name="description" rows="4" required
                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                   placeholder="Detailed description of the property..."><?php echo htmlspecialchars($description); ?></textarea>
+                    </div>
+                    <div>
+                        <label for="target_university" class="block text-sm font-medium text-gray-700">Target University <span class="text-red-500">*</span></label>
+                        <select id="target_university" name="target_university" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                            <option value="">Select a university</option>
+                            <?php foreach ($universities as $code => $name): ?>
+                                <option value="<?php echo htmlspecialchars($code); ?>">
+                                    <?php echo htmlspecialchars($name); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="mt-1 text-sm text-gray-500">Select the university this property is targeted towards</p>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>

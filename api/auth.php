@@ -30,10 +30,8 @@ class Auth {
             // Optionally use the user's token if RLS policies require it:
             // "Authorization: Bearer " . $accessToken
             "Authorization: Bearer " . $this->apiKey
-        ];
-
-        // Construct the URL to fetch the profile where the 'id' column matches the user's ID
-        $endpoint = $this->supabaseUrl . "/rest/v1/profiles?select=role,name&id=eq." . urlencode($userId); // Select role and name
+        ];        // Construct the URL to fetch the profile where the 'id' column matches the user's ID
+        $endpoint = $this->supabaseUrl . "/rest/v1/profiles?select=*&id=eq." . urlencode($userId); // Select all fields
 
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -203,25 +201,26 @@ class Auth {
          $user = $this->getCurrentUser();
          // Get ID from the 'auth' part which comes directly from Supabase auth
          return $user ? ($user['auth']['user']['id'] ?? null) : null;
-     }
-
-    // Function to update user profile
+     }    // Function to update user profile
     public function updateProfile($name, $phone = null, $verificationFilePath = null, $verificationStatus = null) {
         if (!$this->isAuthenticated()) {
             return ['error' => ['message' => 'Not authenticated']];
         }
 
         $userId = $this->getUserId();
+        
+        // Get current profile data first
+        $currentProfile = $this->getUserProfile($userId, null);
+        
+        // Prepare update data while preserving existing values
         $data = [
             'name' => $name,
-            'phone' => $phone
+            'phone' => $phone,
+            'verification_document' => $verificationFilePath ?? $currentProfile['verification_document'] ?? null,
+            'is_verified' => $verificationStatus ?? $currentProfile['is_verified'] ?? 0,
+            'role' => $currentProfile['role'] ?? null,
+            'email' => $currentProfile['email'] ?? null
         ];
-        if ($verificationFilePath !== null) {
-            $data['verification_document'] = $verificationFilePath;
-        }
-        if ($verificationStatus !== null) {
-            $data['is_verified'] = $verificationStatus;
-        }
 
         error_log("Updating profile in Supabase with data: " . json_encode($data));
 

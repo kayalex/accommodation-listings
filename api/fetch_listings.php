@@ -20,18 +20,16 @@ class PropertyListings {
             'Authorization: Bearer ' . $this->supabaseKey,
             'apikey: ' . $this->supabaseKey
         ];
-    }
-
-    /**
+    }    /**
      * Fetch all property listings with optional filters
      * 
-     * @param string $location Filter by location
+     * @param string $targetUniversity Filter by target university
      * @param string $type Filter by property type
      * @param float $priceMin Minimum price
      * @param float $priceMax Maximum price
      * @return array Properties data
      */
-    public function getAllProperties($location = null, $type = null, $priceMin = null, $priceMax = null) {
+    public function getAllProperties($targetUniversity = null, $type = null, $priceMin = null, $priceMax = null) {
         // Fetch all properties with landlord profile info (name and is_verified)
         $endpoint = $this->supabaseUrl . '/rest/v1/properties?select=*,profiles(name,is_verified)';
         
@@ -39,8 +37,8 @@ class PropertyListings {
         $endpoint .= '&order=created_at.desc';
         
         // Apply filters
-        if ($location) {
-            $endpoint .= '&location=eq.' . urlencode($location);
+        if ($targetUniversity) {
+            $endpoint .= '&target_university=eq.' . urlencode($targetUniversity);
         }
         
         if ($type && $type !== 'all') {

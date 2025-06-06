@@ -49,14 +49,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
             } else {
                 $error = $result['error']['message'] ?? "Failed to update password.";
             }
-        }
-    } else { 
+        }    } else { 
         $name = trim($_POST['name']);
         $phone = trim($_POST['phone']);
         
+        // Preserve existing verification information if not being updated
         $verificationFilePath = $currentUser['profile']['verification_document'] ?? null;
-        $verificationStatus = $currentUser['profile']['is_verified'] ?? 0; 
-        $isCurrentlyVerified = (isset($currentUser['profile']['is_verified']) && intval($currentUser['profile']['is_verified']) === 1);
+        $verificationStatus = isset($currentUser['profile']['is_verified']) ? intval($currentUser['profile']['is_verified']) : 0;
+        $isCurrentlyVerified = ($verificationStatus === 1);
 
 
         // Handle file upload only if user is not already verified, or if they are pending/rejected
@@ -146,14 +146,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$error) {
                 $error = "Name is required.";
             } elseif (!empty($phone) && !preg_match('/^[0-9+\-() ]{10,15}$/', $phone)) {
                 $error = "Invalid phone number format.";
-            } else {
-                // Call updateProfile from Auth class
-                // Pass the potentially updated $verificationFilePath and $verificationStatus
+            } else {                // Call updateProfile from Auth class with all current values
                 $result = $auth->updateProfile($name, $phone, $verificationFilePath, $verificationStatus);
                 
                 if (isset($result['success'])) {
                     $success = ($success ?? "") . "Profile details updated successfully!";
-                    $currentUser = $auth->getCurrentUser(); 
+                    // Refresh user data
+                    $currentUser = $auth->getCurrentUser();
+                    // Double-check that verification status is preserved
+                    if ($verificationStatus !== null && 
+                        (!isset($currentUser['profile']['is_verified']) || 
+                         intval($currentUser['profile']['is_verified']) !== intval($verificationStatus))) {
+                        error_log("Warning: Verification status mismatch after update. Expected: $verificationStatus, Got: " . 
+                                ($currentUser['profile']['is_verified'] ?? 'null'));
+                    }
                 } else {
                     error_log("Profile update DB failed for user $user_id: " . json_encode($result));
                     $error = $result['error']['message'] ?? "Failed to update profile in database.";
@@ -250,26 +256,36 @@ $canUploadVerification = ($isVerified !== 1); // User can upload if not (0), pen
 
                 <?php if (($currentUser['profile']['role'] ?? '') === 'landlord'): ?>
                 <div>
-                    <label for="verification_document_input" class="block text-sm font-medium text-brand-gray">Verification Document</label>
+                    <label for="verification_document_input" class="block text-sm font-medium text-brand-gray mb-2">Landlord Verification</label>
+                    
+                    <div class="bg-blue-50 p-4 mb-4 rounded-lg border border-blue-200">
+                        <h4 class="text-blue-800 font-medium mb-2">Verification Instructions:</h4>
+                        <ol class="list-decimal ml-4 text-sm text-blue-700 space-y-2">
+                            <li>Take a clear photo of your National Registration Card (NRC)</li>
+                            <li>Upload the NRC photo below (JPG or PNG format preferred)</li>
+                            <li>Send K10 via mobile money to: <span class="font-medium">+260764416021</span></li>
+                            <li>Important: The name on your NRC must match your mobile money payment details</li>
+                        </ol>
+                    </div>
                     
                     <?php
-                        $status = $isVerified; // Use the already calculated $isVerified
+                        $status = $isVerified;
                         $statusText = 'Not Verified';
                         $statusColor = 'text-red-600';
-                        $uploadMessage = "Upload ID or proof of address (JPG, PNG, PDF - Max 5MB).";
+                        $uploadMessage = "Please follow the verification steps above to verify your account.";
 
-                        if ($status == 1) { // Verified
+                        if ($status == 1) {
                             $statusText = 'Verified';
                             $statusColor = 'text-green-600';
-                            $uploadMessage = "Your account is verified. No new document upload is required.";
-                        } elseif ($status == 2) { // Pending Verification
+                            $uploadMessage = "Your account is verified. No further action required.";
+                        } elseif ($status == 2) {
                             $statusText = 'Pending Verification';
                             $statusColor = 'text-yellow-600';
-                            $uploadMessage = "Your document is pending review. You can upload a new one to replace it.";
-                        } elseif ($status == 3) { // Rejected
+                            $uploadMessage = "Your document is under review. You can upload a new one if needed.";
+                        } elseif ($status == 3) {
                             $statusText = 'Verification Rejected';
                             $statusColor = 'text-red-600';
-                            $uploadMessage = "Your previous verification was rejected. Please upload a new valid document.";
+                            $uploadMessage = "Your verification was rejected. Please ensure your NRC photo is clear and matches your payment details.";
                         }
                     ?>
 
@@ -284,16 +300,12 @@ $canUploadVerification = ($isVerified !== 1); // User can upload if not (0), pen
                                       file:bg-brand-primary/10 file:text-brand-primary
                                       hover:file:bg-brand-primary/20"
                                accept=".jpg,.jpeg,.png,.pdf">
-                        <div id="imagePreviewContainer" class="mt-2">
-                            <img id="thumbnailPreview" src="#" alt="Image Preview" class="hidden max-w-xs max-h-48 rounded border border-brand-light shadow-sm"/>
-                            <p id="pdfPreviewName" class="hidden text-sm text-brand-gray"></p>
-                        </div>
                     <?php endif; ?>
                     
-                    <p class="mt-1 text-sm text-brand-gray/70"><?php echo htmlspecialchars($uploadMessage); ?></p>
+                    <p class="mt-3 text-sm whitespace-pre-line text-brand-gray/70"><?php echo htmlspecialchars($uploadMessage); ?></p>
                     
                     <?php if (!empty($currentUser['profile']['verification_document'])): ?>
-                        <p class="mt-1 text-sm">
+                        <p class="mt-2 text-sm">
                             Current document: 
                             <a href="<?php echo htmlspecialchars($verificationDocUrl); ?>" target="_blank" class="text-brand-primary underline">
                                 View Document
