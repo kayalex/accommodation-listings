@@ -104,10 +104,11 @@ try {
                             Discover comfortable and affordable off-campus accommodations tailored
                             for Copperbelt University students.
                         </p>
-                        <div class="mt-10 flex justify-center gap-4">                            <a href="listings.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-transform transform hover:scale-105">
+                        <div class="mt-10 flex justify-center gap-4">
+                            <a href="listings.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-primary hover:bg-primary/90 transition-transform transform hover:scale-105">
                                 Browse Listings
                             </a>
-                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-primary text-base font-medium rounded-md text-primary bg-white hover:bg-primary/5 transition-transform transform hover:scale-105">
+                            <a href="add-property.php" class="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-primary bg-primary/10 hover:bg-white transition-transform transform hover:scale-105">
                                 List Your Property
                             </a>
                         </div>
@@ -200,9 +201,25 @@ try {
             </div>
         </main>
 
-        <?php require_once __DIR__ . '/../includes/footer.php'; ?>
-
-        
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-6 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
+                <p>© <?php echo date('Y'); ?> StudentHousing. All rights reserved.</p>
+                <div class="mt-4 md:mt-0">
+                    <a href="mailto:support@cbuaccommodations.com" class="text-slate-300 hover:underline">
+                        Contact Us
+                    </a>
+                    <span class="mx-2">|</span>
+                    <a href="https://twitter.com/cbuaccommodations" class="text-slate-300 hover:underline">
+                        Twitter
+                    </a>
+                    <span class="mx-2">|</span>
+                    <a href="https://facebook.com/cbuaccommodations" class="text-slate-300 hover:underline">
+                        Facebook
+                    </a>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script>

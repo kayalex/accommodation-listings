@@ -13,15 +13,12 @@ if ($auth->isAuthenticated()) {
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = $_POST["email"] ?? '';
-    $password = $_POST["password"] ?? '';    $loginResult = $auth->login($email, $password);
+    $password = $_POST["password"] ?? '';
+
+    $loginResult = $auth->login($email, $password);
 
     if ($loginResult === true) {
-        // Check user role and redirect accordingly
-        if ($auth->getUserRole() === 'admin') {
-            header("Location: admin.php");
-        } else {
-            header("Location: dashboard.php");
-        }
+        header("Location: dashboard.php");
         exit();
     } else {
         $error = $loginResult;
