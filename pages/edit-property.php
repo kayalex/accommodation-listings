@@ -231,22 +231,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div>
-                <label for="target_university" class="block text-sm font-medium text-brand-gray mb-2">Target University</label>
-                <select id="target_university" 
-                        name="target_university" 
-                        required 
-                        class="w-full px-3 py-2 border border-brand-light rounded-md focus:outline-none focus:ring-1 focus:ring-brand-primary">
-                    <option value="">Select University</option>
-                    <option value="CBU" <?php echo ($property['target_university'] ?? '') === 'CBU' ? 'selected' : ''; ?>>Copperbelt University (CBU)</option>
-                    <option value="UNZA" <?php echo ($property['target_university'] ?? '') === 'UNZA' ? 'selected' : ''; ?>>University of Zambia (UNZA)</option>
-                    <option value="UNILUS" <?php echo ($property['target_university'] ?? '') === 'UNILUS' ? 'selected' : ''; ?>>University of Lusaka (UNILUS)</option>
-                    <option value="Mulungushi" <?php echo ($property['target_university'] ?? '') === 'Mulungushi' ? 'selected' : ''; ?>>Mulungushi University</option>
-                    <option value="Mukuba" <?php echo ($property['target_university'] ?? '') === 'Mukuba' ? 'selected' : ''; ?>>Mukuba University</option>
-                    <option value="Copperstone" <?php echo ($property['target_university'] ?? '') === 'Copperstone' ? 'selected' : ''; ?>>Copperstone University</option>
-                </select>
-            </div>
-
-            <div>
                 <label class="block text-sm font-medium text-brand-gray">Address</label>
                 <input type="text" name="address" value="<?= htmlspecialchars($property['address']) ?>" 
                        class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">

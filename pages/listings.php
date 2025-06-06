@@ -6,20 +6,22 @@ require_once '../api/fetch_listings.php';
 // Create an instance of PropertyListings
 $listingApi = new PropertyListings();
 
-// Fetch all available amenities
-$amenities = $listingApi->getAmenities();
-
 // Get filter parameters
 $location = isset($_GET['location']) ? $_GET['location'] : '';
-$university = isset($_GET['university']) ? $_GET['university'] : '';
 $type = isset($_GET['type']) ? $_GET['type'] : '';
 $priceMin = isset($_GET['priceMin']) ? $_GET['priceMin'] : '';
 $priceMax = isset($_GET['priceMax']) ? $_GET['priceMax'] : '';
-$selectedAmenities = isset($_GET['amenities']) && is_array($_GET['amenities']) ? $_GET['amenities'] : [];
 
 // Fetch properties with filters
-$properties = $listingApi->getAllProperties($location, $type, $priceMin, $priceMax, $university, $selectedAmenities);
+$properties = $listingApi->getAllProperties($location, $type, $priceMin, $priceMax);
 
+// Property types for the dropdown
+$propertyTypes = [
+    'all' => 'All Types',
+    'apartment' => 'Apartment',
+    'shared' => 'Shared',
+    'hostel' => 'Hostel'
+];
 ?>
 
 <div class="max-w-6xl mx-auto p-6">
@@ -27,17 +29,22 @@ $properties = $listingApi->getAllProperties($location, $type, $priceMin, $priceM
 
     <!-- Filters Section -->
     <form method="GET" action="listings.php" class="mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
-                <select name="university" 
-                        class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
-                    <option value="">All Universities</option>
-                    <option value="CBU" <?php echo $university === 'CBU' ? 'selected' : ''; ?>>Copperbelt University (CBU)</option>
-                    <option value="UNZA" <?php echo $university === 'UNZA' ? 'selected' : ''; ?>>University of Zambia (UNZA)</option>
-                    <option value="UNILUS" <?php echo $university === 'UNILUS' ? 'selected' : ''; ?>>University of Lusaka (UNILUS)</option>
-                    <option value="Mulungushi" <?php echo $university === 'Mulungushi' ? 'selected' : ''; ?>>Mulungushi University</option>
-                    <option value="Mukuba" <?php echo $university === 'Mukuba' ? 'selected' : ''; ?>>Mukuba University</option>
-                    <option value="Copperstone" <?php echo $university === 'Copperstone' ? 'selected' : ''; ?>>Copperstone University</option>
+                <input type="text" 
+                       name="location" 
+                       placeholder="Search by location..." 
+                       value="<?= htmlspecialchars($location) ?>"
+                       class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+            </div>
+
+            <div>
+                <select name="type" class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
+                    <?php foreach ($propertyTypes as $value => $label): ?>
+                        <option value="<?= $value ?>" <?= $type === $value ? 'selected' : '' ?>>
+                            <?= $label ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
@@ -57,8 +64,6 @@ $properties = $listingApi->getAllProperties($location, $type, $priceMin, $priceM
                        class="w-full p-2 border border-brand-light rounded focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none">
             </div>
         </div>
-
-        
 
         <div class="flex gap-4">
             <button type="submit" class="px-4 py-2 bg-brand-primary text-white rounded hover:bg-brand-secondary transition-colors">

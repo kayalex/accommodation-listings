@@ -31,14 +31,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // Basic validation
     if (empty($email) || empty($password) || empty($name) || empty($role)) {
-        $error = "All fields are required.";    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "All fields are required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email format.";
-    } elseif (strlen($password) < 8 || 
-              !preg_match('/[A-Z]/', $password) || 
-              !preg_match('/[a-z]/', $password) || 
-              !preg_match('/[0-9]/', $password) || 
-              !preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
-        $error = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.";
+    } elseif (strlen($password) < 6) {
+        $error = "Password must be at least 6 characters long.";
     } elseif (!in_array($role, ['student', 'landlord'])) {
         $error = "Invalid role selected.";
     } elseif (!empty($phone) && !preg_match('/^[0-9+\-() ]{10,15}$/', $phone)) {
@@ -161,18 +158,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </div>
         </form>
 
-        <!-- Password Requirements -->
-        <div class="mt-4 text-sm text-brand-gray/70">
-            <p class="font-medium mb-2">Password must:</p>
-            <ul class="list-disc list-inside space-y-1">
-                <li id="length">Be at least 8 characters long</li>
-                <li id="uppercase">Contain at least one uppercase letter</li>
-                <li id="lowercase">Contain at least one lowercase letter</li>
-                <li id="number">Contain at least one number</li>
-                <li id="symbol">Contain at least one special character (!@#$%^&*(),.?":{}|<>)</li>
-            </ul>
-        </div>
-
         <div class="text-sm text-center text-brand-gray/70">
             By signing up, you agree to our 
             <a href="#" class="font-medium text-brand-primary hover:text-brand-secondary">Terms</a> 
@@ -181,32 +166,5 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         </div>
     </div>
 </div>
-
-<script>
-document.getElementById('password').addEventListener('input', function(e) {
-    const password = e.target.value;
-    
-    // Check each requirement
-    const requirements = {
-        length: password.length >= 8,
-        uppercase: /[A-Z]/.test(password),
-        lowercase: /[a-z]/.test(password),
-        number: /\d/.test(password),
-        symbol: /[!@#$%^&*(),.?":{}|<>]/.test(password)
-    };
-
-    // Update visual feedback
-    Object.keys(requirements).forEach(req => {
-        const element = document.getElementById(req);
-        if (requirements[req]) {
-            element.classList.remove('text-brand-gray/70');
-            element.classList.add('text-green-600');
-        } else {
-            element.classList.remove('text-green-600');
-            element.classList.add('text-brand-gray/70');
-        }
-    });
-});
-</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
