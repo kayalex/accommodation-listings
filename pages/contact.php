@@ -14,7 +14,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <div class="flex items-center">
                         <i class="fa-solid fa-envelope text-brand-primary w-6"></i>
                         <a href="mailto:support@studentaccommodation.com" class="text-brand-gray hover:text-brand-primary ml-2">
-                            support@studentaccommodation.com
+                            cs301project2025@gmail.com
                         </a>
                     </div>
                     <div class="flex items-center">
@@ -41,39 +41,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
-            <!-- Contact Form -->
-            <div>
-                <h2 class="text-xl font-semibold mb-4 text-brand-gray">Send us a Message</h2>
-                <form class="space-y-4">
-                    <div>
-                        <label for="name" class="block text-sm font-medium text-brand-gray">Full Name</label>
-                        <input type="text" id="name" name="name" required
-                               class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
-                    </div>
-
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-brand-gray">Email Address</label>
-                        <input type="email" id="email" name="email" required
-                               class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
-                    </div>
-
-                    <div>
-                        <label for="subject" class="block text-sm font-medium text-brand-gray">Subject</label>
-                        <input type="text" id="subject" name="subject" required
-                               class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50">
-                    </div>
-
-                    <div>
-                        <label for="message" class="block text-sm font-medium text-brand-gray">Message</label>
-                        <textarea id="message" name="message" rows="4" required
-                                  class="mt-1 block w-full rounded-md border-brand-light shadow-sm focus:border-brand-primary focus:ring focus:ring-brand-primary focus:ring-opacity-50"></textarea>
-                    </div>
-
-                    <button type="submit" class="w-full bg-brand-primary text-white py-2 px-4 rounded hover:bg-brand-secondary transition-colors">
-                        <i class="fa-solid fa-paper-plane mr-2"></i>Send Message
-                    </button>
-                </form>
-            </div>
+            
         </div>
     </div>
 </div>

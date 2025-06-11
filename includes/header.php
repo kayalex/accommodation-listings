@@ -158,7 +158,7 @@ $userRole = $isLoggedIn ? $auth->getUserRole() : null;
                             <i class="fas fa-sign-in-alt text-brand-primary/80"></i>
                             <span>Login</span>
                         </a>
-                        <a href="register.php" class="bg-brand-primary hover:bg-brand-secondary text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1.5">
+                        <a href="sign-up.php" class="bg-brand-primary hover:bg-brand-secondary text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1.5">
                             <i class="fas fa-user-plus"></i>
                             <span>Register</span>
                         </a>
