@@ -170,6 +170,32 @@ if (!empty($property['property_amenities'])) {
             </div>
         </div>
     </div>
+
+    <!-- Landlord Info and Report Button -->
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-semibold text-brand-gray mb-2">Landlord Information</h2>
+                <p class="text-brand-gray/70">
+                    <span class="font-medium">Landlord ID:</span>
+                    #<?php
+                        $landlordId = $property['profiles']['unique_id'] ?? null;
+                        echo $landlordId ? htmlspecialchars($landlordId) : '<span class="text-red-500">N/A</span>';
+                    ?>
+                </p>
+            </div>
+            <?php if ($isLoggedIn && $auth->getUserRole() === 'student'): ?>
+            <button 
+                onclick="openReportModal(<?= $propertyId ?>, '<?= $property['landlord_id'] ?>')"
+                class="text-red-600 hover:text-red-700 flex items-center gap-2">
+                <i class="fas fa-flag"></i>
+                <span>Report Listing</span>
+            </button>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php require_once 'report.php'; ?>
 </div>
 
 <!-- Include Leaflet for the map -->
@@ -178,10 +204,16 @@ if (!empty($property['property_amenities'])) {
 <!-- Add Font Awesome for icons -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+<?php 
+// Initialize map with property coordinates
+$latitude = $property['latitude'] ?? -12.80532; // Default to Zambia's approximate center
+$longitude = $property['longitude'] ?? 28.24403;
+?>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const latitude = <?= $property['latitude'] ?? 0 ?>;
-    const longitude = <?= $property['longitude'] ?? 0 ?>;
+    const latitude = <?= $property['latitude'] ?? $latitude ?>;
+    const longitude = <?= $property['longitude'] ?? $longitude ?>;
     
     // Initialize map
     const map = L.map('property-map').setView([latitude, longitude], 15);
@@ -191,7 +223,12 @@ document.addEventListener('DOMContentLoaded', function() {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
     
-    // Add radius circle
+    // Add marker and circle
+    L.marker([latitude, longitude])
+        .addTo(map)
+        .bindPopup("<?= htmlspecialchars($property['title']) ?>")
+        .openPopup();
+
     L.circle([latitude, longitude], {
         color: '#8CC63F',
         fillColor: '#8CC63F',
@@ -199,26 +236,6 @@ document.addEventListener('DOMContentLoaded', function() {
         radius: 500, // 500 meters radius
         weight: 2
     }).addTo(map);
-});
-</script>
-
-<?php // Initialize map with property coordinates
-$latitude = $property['latitude'] ?? -12.80532; // Default to Zambia's approximate center
-$longitude = $property['longitude'] ?? 28.24403;
-?>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const map = L.map('property-map').setView([<?= $latitude ?>, <?= $longitude ?>], 15);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    L.marker([<?= $latitude ?>, <?= $longitude ?>])
-        .addTo(map)
-        .bindPopup("<?= htmlspecialchars($property['title']) ?>")
-        .openPopup();
 });
 </script>
 

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../api/auth.php';
+require_once __DIR__ . '/../api/reports.php';
 require_once __DIR__ .'/../config/config.php';
 
 $auth = new Auth();
@@ -15,53 +16,65 @@ $errorMessage = $_GET['error'] ?? null;
 // Get active tab (default to users)
 $activeTab = $_GET['tab'] ?? 'users';
 
-// Handle property deletion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_property') {
-    $propertyId = isset($_POST['property_id']) ? intval($_POST['property_id']) : 0;
-    
-    if ($propertyId) {
-        try {
-            // Delete property images from storage and database
-            $endpoint = SUPABASE_URL . '/rest/v1/property_images?property_id=eq.' . $propertyId;
-            $headers = [
-                "Content-Type: application/json",
-                "apikey: " . SUPABASE_KEY,
-                "Authorization: Bearer " . SUPABASE_KEY
-            ];
-            
-            $ch = curl_init($endpoint);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_exec($ch);
-            curl_close($ch);
-            
-            // Delete property amenities
-            $endpoint = SUPABASE_URL . '/rest/v1/property_amenities?property_id=eq.' . $propertyId;
-            $ch = curl_init($endpoint);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_exec($ch);
-            curl_close($ch);
-            
-            // Delete the property itself
-            $endpoint = SUPABASE_URL . '/rest/v1/properties?id=eq.' . $propertyId;
-            $ch = curl_init($endpoint);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $response = curl_exec($ch);
-            $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);            if ($statusCode === 204) {
-                $successMessage = 'Property deleted successfully';
-                $activeTab = 'properties';
+// Handle POST actions (report status updates and property deletion)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'review_report' || $_POST['action'] === 'resolve_report') {
+        $reportId = isset($_POST['report_id']) ? intval($_POST['report_id']) : 0;
+        $newStatus = $_POST['action'] === 'review_report' ? 'reviewed' : 'resolved';
+        if ($reportId) {
+            $reports = new Reports();
+            $result = $reports->updateReportStatus($reportId, $newStatus);
+            if ($result['success']) {
+                $successMessage = 'Report marked as ' . $newStatus . ' successfully.';
             } else {
-                throw new Exception("Failed to delete property");
+                $errorMessage = 'Failed to update report status: ' . $result['message'];
             }
-        } catch (Exception $e) {
-            $errorMessage = $e->getMessage();
-            $activeTab = 'properties';
+            $activeTab = 'reports';
+        }
+    } elseif ($_POST['action'] === 'delete_property') {
+        $propertyId = isset($_POST['property_id']) ? intval($_POST['property_id']) : 0;
+        if ($propertyId) {
+            try {
+                // Delete property images from storage and database
+                $endpoint = SUPABASE_URL . '/rest/v1/property_images?property_id=eq.' . $propertyId;
+                $headers = [
+                    "Content-Type: application/json",
+                    "apikey: " . SUPABASE_KEY,
+                    "Authorization: Bearer " . SUPABASE_KEY
+                ];
+                $ch = curl_init($endpoint);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_exec($ch);
+                curl_close($ch);
+                // Delete property amenities
+                $endpoint = SUPABASE_URL . '/rest/v1/property_amenities?property_id=eq.' . $propertyId;
+                $ch = curl_init($endpoint);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_exec($ch);
+                curl_close($ch);
+                // Delete the property itself
+                $endpoint = SUPABASE_URL . '/rest/v1/properties?id=eq.' . $propertyId;
+                $ch = curl_init($endpoint);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                $response = curl_exec($ch);
+                $statusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                if ($statusCode === 204) {
+                    $successMessage = 'Property deleted successfully';
+                    $activeTab = 'properties';
+                } else {
+                    throw new Exception("Failed to delete property");
+                }
+            } catch (Exception $e) {
+                $errorMessage = $e->getMessage();
+                $activeTab = 'properties';
+            }
         }
     }
 }
@@ -198,6 +211,18 @@ require_once __DIR__ . '/../includes/header.php';
             </a>
             <a href="?tab=properties" class="<?= $activeTab === 'properties' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Manage Properties
+            </a>
+            <a href="?tab=reports" class="<?= $activeTab === 'reports' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
+                <span>Reports</span>
+                <?php
+                $reports = new Reports();
+                $pendingReports = count(array_filter($reports->getReports(), function($report) {
+                    return $report['status'] === 'pending';
+                }));
+                if ($pendingReports > 0):
+                ?>
+                <span class="bg-red-100 text-red-600 text-xs font-medium px-2 py-0.5 rounded-full"><?= $pendingReports ?></span>
+                <?php endif; ?>
             </a>
             <a href="?tab=verifications" class="<?= $activeTab === 'verifications' ? 'border-brand-primary text-brand-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' ?> whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Verification Requests
@@ -485,6 +510,112 @@ require_once __DIR__ . '/../includes/header.php';
                     </table>
                 </div>
             <?php endif; ?>
+        </div>
+    <?php elseif ($activeTab === 'reports'): ?>
+        <!-- Reports Tab -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Reported Listings</h2>
+                <div class="flex gap-2">
+                    <a href="?tab=reports&filter=pending" class="px-3 py-1 text-sm rounded-full <?= (!isset($_GET['filter']) || $_GET['filter'] === 'pending') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600' ?>">
+                        Pending
+                    </a>
+                    <a href="?tab=reports&filter=reviewed" class="px-3 py-1 text-sm rounded-full <?= isset($_GET['filter']) && $_GET['filter'] === 'reviewed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600' ?>">
+                        Reviewed
+                    </a>
+                    <a href="?tab=reports&filter=resolved" class="px-3 py-1 text-sm rounded-full <?= isset($_GET['filter']) && $_GET['filter'] === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' ?>">
+                        Resolved
+                    </a>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Listing ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Landlord Unique ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php
+                        $filter = $_GET['filter'] ?? 'pending';
+                        $reports = new Reports();
+                        $reportsList = $reports->getReports($filter);
+                        
+                        foreach ($reportsList as $report):
+                            $statusClass = match($report['status']) {
+                                'pending' => 'bg-yellow-100 text-yellow-800',
+                                'reviewed' => 'bg-blue-100 text-blue-800',
+                                'resolved' => 'bg-green-100 text-green-800',
+                                default => 'bg-gray-100 text-gray-600'
+                            };
+                        ?>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-brand-gray">
+                                <a href="listing_detail.php?id=<?= htmlspecialchars($report['listing_id']) ?>" class="text-brand-primary hover:text-brand-secondary">
+                                    #<?= htmlspecialchars($report['listing_id']) ?>
+                                </a>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-brand-gray">
+                                <?php
+                                // Fetch landlord unique_id for this report
+                                $landlordUniqueId = '';
+                                if (!empty($report['landlord_id'])) {
+                                    $endpoint = $supabaseUrl . "/rest/v1/profiles?id=eq." . urlencode($report['landlord_id']) . "&select=unique_id";
+                                    $ch = curl_init($endpoint);
+                                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                                    $response = curl_exec($ch);
+                                    curl_close($ch);
+                                    $profile = json_decode($response, true);
+                                    if (!empty($profile[0]['unique_id'])) {
+                                        $landlordUniqueId = $profile[0]['unique_id'];
+                                    }
+                                }
+                                ?>
+                                <?= $landlordUniqueId ? '#' . htmlspecialchars($landlordUniqueId) : '<span class="text-gray-400">N/A</span>' ?>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-brand-gray max-w-xs truncate">
+                                <?= htmlspecialchars($report['reason']) ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $statusClass ?>">
+                                    <?= ucfirst(htmlspecialchars($report['status'])) ?>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-brand-gray">
+                                <?= date('M j, Y', strtotime($report['created_at'])) ?>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center space-x-3">
+                                    <?php if ($report['status'] === 'pending'): ?>
+                                    <form method="POST" class="inline">
+                                        <input type="hidden" name="report_id" value="<?= htmlspecialchars($report['id']) ?>">
+                                        <button type="submit" name="action" value="review_report" class="text-blue-600 hover:text-blue-900">
+                                            Mark as Reviewed
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <?php if ($report['status'] === 'reviewed'): ?>
+                                    <form method="POST" class="inline">
+                                        <input type="hidden" name="report_id" value="<?= htmlspecialchars($report['id']) ?>">
+                                        <button type="submit" name="action" value="resolve_report" class="text-green-600 hover:text-green-900">
+                                            Mark as Resolved
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     <?php endif; ?>
 </div>

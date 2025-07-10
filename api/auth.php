@@ -1,6 +1,8 @@
 <?php
 // api/auth.php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 include_once __DIR__ . "/../config/config.php"; // Include Supabase config
 
 class Auth {
@@ -53,13 +55,20 @@ class Auth {
     }
 
     // Function to register a user with profile creation
+    private function generateUniqueId() {
+        return str_pad(mt_rand(0, 99999), 5, '0', STR_PAD_LEFT);
+    }
+
     public function register($email, $password, $name, $role, $phone = null) {
+        $uniqueId = $this->generateUniqueId();
+        
         $data = json_encode([
             "email" => $email,
             "password" => $password,
             "data" => [
                 "name" => $name,
-                "role" => $role
+                "role" => $role,
+                "unique_id" => $uniqueId
             ]
         ]);
 
@@ -84,7 +93,8 @@ class Auth {
                 "name" => $name,
                 "role" => $role,
                 "email" => $email,
-                "phone" => $phone
+                "phone" => $phone,
+                "unique_id" => $uniqueId
             ]);
 
             $ch = curl_init($this->supabaseUrl . "/rest/v1/profiles");
