@@ -30,15 +30,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $phone = $_POST["phone"];
 
     // Basic validation
-    if (empty($email) || empty($password) || empty($name) || empty($role)) {
-        $error = "All fields are required.";
+    if (empty($email) || empty($password) || empty($name) || empty($role) || empty($phone)) {
+        $error = "All fields are required, including phone number.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Invalid email format.";
     } elseif (strlen($password) < 6) {
         $error = "Password must be at least 6 characters long.";
     } elseif (!in_array($role, ['student', 'landlord'])) {
         $error = "Invalid role selected.";
-    } elseif (!empty($phone) && !preg_match('/^[0-9+\-() ]{10,15}$/', $phone)) {
+    } elseif (!preg_match('/^[0-9+\-() ]{10,15}$/', $phone)) {
         $error = "Invalid phone number format.";
     } else {
         $result = $auth->register($email, $password, $name, $role, $phone);
