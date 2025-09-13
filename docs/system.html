@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StayVista System Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: white;
+            padding: 20px;
+            line-height: 1.4;
+        }
+
+        .diagram-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #34495e;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .architecture {
+            padding: 30px;
+            background: #fafafa;
+        }
+
+        .system-flow {
+            display: grid;
+            grid-template-columns: 200px 1fr 200px;
+            gap: 30px;
+            align-items: start;
+            margin-bottom: 40px;
+        }
+
+        .actors-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .actor {
+            background: #ecf0f1;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            font-size: 0.85rem;
+        }
+
+        .actor-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .actor h4 {
+            font-size: 0.9rem;
+            color: #2c3e50;
+            margin-bottom: 3px;
+        }
+
+        .core-system {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .layers {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .layer {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid;
+            position: relative;
+        }
+
+        .layer-presentation { border-left-color: #e74c3c; background: #fdf2f2; }
+        .layer-api { border-left-color: #3498db; background: #f0f8ff; }
+        .layer-config { border-left-color: #f39c12; background: #fef9e7; }
+        .layer-data { border-left-color: #27ae60; background: #f0fff4; }
+
+        .layer-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .layer-icon {
+            font-size: 16px;
+            margin-right: 8px;
+        }
+
+        .layer-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .layer-components {
+            font-size: 0.8rem;
+            color: #555;
+            line-height: 1.3;
+        }
+
+        .data-flows {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .flow-arrow {
+            background: #3498db;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            position: relative;
+            margin: 5px 0;
+        }
+
+        .flow-arrow::after {
+            content: '↓';
+            position: absolute;
+            left: 50%;
+            bottom: -15px;
+            transform: translateX(-50%);
+            color: #3498db;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .flow-arrow:last-child::after {
+            display: none;
+        }
+
+        .tech-stack {
+            background: white;
+            border: 2px solid #9b59b6;
+            border-radius: 8px;
+            padding: 12px;
+            flex-shrink: 0;
+        }
+
+        .tech-header {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .tech-items {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            text-align: center;
+        }
+
+        .tech-item {
+            background: #f8f9fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            border: 1px solid #e9ecef;
+            color: #495057;
+        }
+
+        .key-features {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+            flex-shrink: 0;
+        }
+
+        .feature-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .feature-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+        }
+
+        .feature-list {
+            font-size: 0.7rem;
+            color: #555;
+            line-height: 1.3;
+        }
+
+        .connection-line {
+            position: absolute;
+            width: 2px;
+            background: #bdc3c7;
+            z-index: -1;
+        }
+
+        @media print {
+            body { background: white; }
+            .diagram-container { border: 1px solid #000; }
+        }
+
+        @media (max-width: 900px) {
+            .system-flow {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .actors-column {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            
+            .data-flows {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .tech-items {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .key-features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="diagram-container">
+        <div class="header">
+            <h1>Accommodation Listings System Architecture</h1>
+            <p>XAMPP (Apache/PHP/MySQL) • Session-based Authentication • File Upload Management</p>
+        </div>
+
+        <div class="architecture">
+            <div class="system-flow">
+                <!-- Left: Actors -->
+                <div class="actors-column">
+                    <div class="actor">
+                        <div class="actor-icon">👤</div>
+                        <h4>Guest</h4>
+                        <p>Browse listings</p>
+                    </div>
+                    <div class="actor">
+                        <div class="actor-icon">👥</div>
+                        <h4>User</h4>
+                        <p>CRUD properties</p>
+                    </div>
+                    <div class="actor">
+                        <div class="actor-icon">👑</div>
+                        <h4>Admin</h4>
+                        <p>Moderation</p>
+                    </div>
+                </div>
+
+                <!-- Center: Core System Layers -->
+                <div class="core-system">
+                    <div class="layers">
+                        <div class="layer layer-presentation">
+                            <div class="layer-header">
+                                <span class="layer-icon">🖥️</span>
+                                <div class="layer-title">Presentation Layer</div>
+                            </div>
+                            <div class="layer-components">
+                                PHP Pages: index.php, listings.php, login.php, dashboard.php, admin.php<br>
+                                Includes: header.php, footer.php
+                            </div>
+                        </div>
+
+                        <div class="layer layer-api">
+                            <div class="layer-header">
+                                <span class="layer-icon">🔌</span>
+                                <div class="layer-title">API Layer</div>
+                            </div>
+                            <div class="layer-components">
+                                auth.php • fetch_listings.php • create_listings.php<br>
+                                submit_report.php • reports.php
+                            </div>
+                        </div>
+
+                        <div class="layer layer-config">
+                            <div class="layer-header">
+                                <span class="layer-icon">⚙️</span>
+                                <div class="layer-title">Configuration & Infrastructure</div>
+                            </div>
+                            <div class="layer-components">
+                                config.php • .htaccess • Error logging<br>
+                                RLS policies • Maintenance scripts
+                            </div>
+                        </div>
+
+                        <div class="layer layer-data">
+                            <div class="layer-header">
+                                <span class="layer-icon">🗄️</span>
+                                <div class="layer-title">Data Storage</div>
+                            </div>
+                            <div class="layer-components">
+                                MySQL: Users, Listings, Reports<br>
+                                File Storage: verification_docs/ • Static assets
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Data Flow -->
+                <div class="data-flows">
+                    <div class="flow-arrow">HTTP Request</div>
+                    <div class="flow-arrow">Route to PHP</div>
+                    <div class="flow-arrow">Call API</div>
+                    <div class="flow-arrow">Query MySQL</div>
+                    <div class="flow-arrow">Return Data</div>
+                    <div class="flow-arrow">Render Page</div>
+                </div>
+            </div>
+
+            <!-- Technology Stack -->
+            <div class="tech-stack">
+                <div class="tech-header">🛠️ Technology Stack</div>
+                <div class="tech-items">
+                    <div class="tech-item">Apache Web Server</div>
+                    <div class="tech-item">PHP 8.x</div>
+                    <div class="tech-item">MySQL Database</div>
+                    <div class="tech-item">XAMPP (Windows)</div>
+                    <div class="tech-item">Session Management</div>
+                    <div class="tech-item">File Upload System</div>
+                </div>
+            </div>
+
+            <!-- Key System Features -->
+            <div class="key-features">
+                <div class="feature-box">
+                    <div class="feature-title">🔐 Security Features</div>
+                    <div class="feature-list">
+                        • Session-based authentication<br>
+                        • Role-based access control<br>
+                        • Input validation & sanitization<br>
+                        • Secure file upload handling
+                    </div>
+                </div>
+
+                <div class="feature-box">
+                    <div class="feature-title">📊 Core Functionality</div>
+                    <div class="feature-list">
+                        • Property listings CRUD operations<br>
+                        • User registration & profile management<br>
+                        • Report submission & moderation<br>
+                        • Document verification system
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Print-friendly adjustments
+        window.addEventListener('beforeprint', () => {
+            document.body.style.background = 'white';
+        });
+        
+        window.addEventListener('afterprint', () => {
+            document.body.style.background = '';
+        });
+    </script>
+</body>
+</html>
