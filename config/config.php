@@ -13,7 +13,7 @@ $dbPass = 'Typy$ZLD786!uxR'; // Replace with the database password from Supabase
 $dbPort = '5432';
 
 // Application settings
-$appName = 'Unistay';
+$appName = 'Stayvista';
 $appUrl = 'http://localhost/accommodation-listings';
 
 // Error reporting

@@ -7,7 +7,12 @@ $error = '';  // Initialize error variable
 
 // If already authenticated, redirect to dashboard
 if ($auth->isAuthenticated()) {
-    header("Location: dashboard.php");
+    $role = $auth->getUserRole();
+    if ($role === 'admin') {
+        header("Location: admin.php");
+    } else {
+        header("Location: dashboard.php");
+    }
     exit();
 }
 
@@ -18,7 +23,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $loginResult = $auth->login($email, $password);
 
     if ($loginResult === true) {
-        header("Location: dashboard.php");
+        $role = $auth->getUserRole();
+        header("Location: " . ($role === 'admin' ? 'admin.php' : 'dashboard.php'));
         exit();
     } else {
         $error = $loginResult;

@@ -1,6 +1,6 @@
 # Accommodation Listings System — Implementation Report
 
-Author: Unistay Team
+Author: Stayvista Team
 
 Date: 2025-09-12
 
